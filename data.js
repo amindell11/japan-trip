@@ -211,7 +211,7 @@ const TRIP_DATA = {
               summary:
                 "Immersive barefoot walk-through art installation themed around water and forests. Book in advance. Best in the evening.",
               tags: ["art", "immersive", "indoor"],
-              wiki: "TeamLab",
+              wiki: "",
               coords: [35.6493, 139.7901],
               links: [
                 { label: "Official & tickets", url: "https://www.teamlab.art/e/planets/" },

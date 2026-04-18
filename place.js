@@ -94,13 +94,9 @@ function autoLinks(place) {
       label: "Google Maps",
       url: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
     });
-    out.push({
-      label: "Directions",
-      url: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
-    });
   } else {
     out.push({
-      label: "Search on Google Maps",
+      label: "Google Maps",
       url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name + " Japan")}`,
     });
   }
@@ -171,6 +167,13 @@ function renderDetail({ place, section, group }) {
   galleryBox.appendChild(gallery);
   body.appendChild(galleryBox);
 
+  const reviewsBox = el("section", "detail-section detail-reviews");
+  reviewsBox.appendChild(el("h2", "detail-h2", "Ratings & Comments"));
+  const reviewsInner = el("div", "reviews-inner");
+  reviewsBox.appendChild(reviewsInner);
+  body.appendChild(reviewsBox);
+  mountReviews(reviewsInner, slugify(place.name));
+
   root.appendChild(body);
 
   fetchSummary(place.wiki).then((summary) => {
@@ -220,6 +223,189 @@ function renderDetail({ place, section, group }) {
       }
       gallery.appendChild(a);
     }
+  });
+}
+
+function formatTime(ts) {
+  if (!ts?.toDate) return "";
+  const d = ts.toDate();
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function renderStars(container, value, { interactive, onPick }) {
+  container.innerHTML = "";
+  for (let i = 1; i <= 5; i++) {
+    const s = document.createElement("span");
+    s.className = "star" + (i <= value ? " filled" : "");
+    s.textContent = "★";
+    if (interactive) {
+      s.addEventListener("click", () => onPick(i));
+      s.addEventListener("mouseenter", () => {
+        for (const n of container.children)
+          n.classList.toggle("hover", Number(n.dataset.n) <= i);
+      });
+      s.addEventListener("mouseleave", () => {
+        for (const n of container.children) n.classList.remove("hover");
+      });
+      s.dataset.n = i;
+      s.style.cursor = "pointer";
+    }
+    container.appendChild(s);
+  }
+}
+
+function mountReviews(root, slug) {
+  root.innerHTML = "";
+
+  const summaryRow = el("div", "reviews-summary");
+  const stars = el("div", "stars");
+  const avgText = el("span", "reviews-avg muted", "No ratings yet");
+  summaryRow.append(stars, avgText);
+  root.appendChild(summaryRow);
+
+  const yourRatingRow = el("div", "reviews-your");
+  root.appendChild(yourRatingRow);
+
+  const commentsWrap = el("div", "comments");
+  root.appendChild(commentsWrap);
+
+  const inputWrap = el("div", "comment-input-wrap");
+  root.appendChild(inputWrap);
+
+  if (!window.Trip?.configured) {
+    avgText.textContent =
+      "Ratings & comments disabled — Firebase not configured.";
+    return;
+  }
+
+  let stats = { ratingSum: 0, ratingCount: 0, commentCount: 0 };
+  let userRating = 0;
+
+  function paintSummary() {
+    const avg = stats.ratingCount ? stats.ratingSum / stats.ratingCount : 0;
+    renderStars(stars, Math.round(avg), { interactive: false });
+    avgText.textContent = stats.ratingCount
+      ? `${avg.toFixed(1)} · ${stats.ratingCount} rating${
+          stats.ratingCount === 1 ? "" : "s"
+        }`
+      : "No ratings yet";
+  }
+
+  function paintYourRating() {
+    yourRatingRow.innerHTML = "";
+    if (!window.Trip.currentUser) {
+      yourRatingRow.innerHTML =
+        '<span class="muted">Sign in above to rate and comment.</span>';
+      return;
+    }
+    yourRatingRow.appendChild(el("span", "your-label", "Your rating:"));
+    const yourStars = el("div", "stars interactive");
+    yourRatingRow.appendChild(yourStars);
+    renderStars(yourStars, userRating, {
+      interactive: true,
+      onPick: async (r) => {
+        userRating = r;
+        paintYourRating();
+        try {
+          await window.Trip.submitRating(slug, r);
+          stats = await window.Trip.getStats(slug);
+          paintSummary();
+        } catch (e) {
+          alert(e.message);
+        }
+      },
+    });
+  }
+
+  function paintCommentInput() {
+    inputWrap.innerHTML = "";
+    if (!window.Trip.currentUser) return;
+    const ta = document.createElement("textarea");
+    ta.placeholder = "Add a comment…";
+    ta.rows = 3;
+    const row = el("div", "comment-actions");
+    const btn = document.createElement("button");
+    btn.className = "auth-btn primary";
+    btn.textContent = "Post";
+    btn.addEventListener("click", async () => {
+      const text = ta.value.trim();
+      if (!text) return;
+      btn.disabled = true;
+      try {
+        await window.Trip.addComment(slug, text);
+        ta.value = "";
+        await loadComments();
+        stats = await window.Trip.getStats(slug);
+      } catch (e) {
+        alert(e.message);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+    row.appendChild(btn);
+    inputWrap.append(ta, row);
+  }
+
+  async function loadComments() {
+    const list = await window.Trip.getComments(slug);
+    commentsWrap.innerHTML = "";
+    if (!list.length) {
+      commentsWrap.appendChild(
+        el("p", "muted no-comments", "No comments yet.")
+      );
+      return;
+    }
+    for (const c of list) {
+      const item = el("div", "comment");
+      const head = el("div", "comment-head");
+      if (c.photo) {
+        const img = document.createElement("img");
+        img.src = c.photo;
+        img.alt = "";
+        img.className = "comment-avatar";
+        head.appendChild(img);
+      }
+      head.appendChild(el("strong", "comment-name", c.name || "Anon"));
+      head.appendChild(el("span", "comment-time muted", formatTime(c.createdAt)));
+      if (
+        window.Trip.currentUser &&
+        window.Trip.currentUser.uid === c.uid
+      ) {
+        const del = document.createElement("button");
+        del.className = "comment-delete";
+        del.textContent = "Delete";
+        del.addEventListener("click", async () => {
+          if (!confirm("Delete this comment?")) return;
+          await window.Trip.deleteComment(slug, c.id);
+          await loadComments();
+          stats = await window.Trip.getStats(slug);
+        });
+        head.appendChild(del);
+      }
+      item.appendChild(head);
+      const body = el("p", "comment-text");
+      body.textContent = c.text;
+      item.appendChild(body);
+      commentsWrap.appendChild(item);
+    }
+  }
+
+  async function refreshAll() {
+    stats = (await window.Trip.getStats(slug)) || stats;
+    paintSummary();
+    userRating = (await window.Trip.getUserRating(slug)) || 0;
+    paintYourRating();
+    paintCommentInput();
+    await loadComments();
+  }
+
+  window.Trip.on(() => {
+    refreshAll();
   });
 }
 

@@ -86,9 +86,25 @@ function el(tag, className, html) {
   return e;
 }
 
+function directionsUrl(place) {
+  if (place.coords) {
+    const [lat, lng] = place.coords;
+    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+  }
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    place.name + " Japan"
+  )}`;
+}
+
 function renderPlace(place) {
-  const card = el("a", "card");
-  card.href = "place.html?slug=" + encodeURIComponent(slugify(place.name));
+  const card = el("div", "card");
+  const slug = slugify(place.name);
+  card.dataset.slug = slug;
+  const detailHref = "place.html?slug=" + encodeURIComponent(slug);
+  card.addEventListener("click", (e) => {
+    if (e.target.closest("a")) return;
+    window.location.href = detailHref;
+  });
   const imgWrap = el("div", "card-img");
   card.appendChild(imgWrap);
 
@@ -103,8 +119,18 @@ function renderPlace(place) {
     body.appendChild(tags);
   }
 
-  const more = el("span", "card-more", "View details →");
-  body.appendChild(more);
+  body.appendChild(el("div", "card-stats"));
+
+  const actions = el("div", "card-actions");
+  const more = el("a", "card-more", "View details →");
+  more.href = detailHref;
+  actions.appendChild(more);
+  const dir = el("a", "card-directions", "Directions ↗");
+  dir.href = directionsUrl(place);
+  dir.target = "_blank";
+  dir.rel = "noopener";
+  actions.appendChild(dir);
+  body.appendChild(actions);
 
   card.appendChild(body);
 
@@ -183,7 +209,11 @@ function makeMarker(place) {
   const tags = (place.tags || [])
     .map((t) => `<span class="tag">${t}</span>`)
     .join("");
-  const links = (place.links || [])
+  const extraLinks = [
+    ...(place.links || []),
+    { label: "Directions ↗", url: directionsUrl(place) },
+  ];
+  const links = extraLinks
     .map(
       (l) =>
         `<li><a href="${l.url}" target="_blank" rel="noopener">${l.label}</a></li>`
@@ -309,4 +339,29 @@ getTripData().then((data) => {
     btn.addEventListener("click", () => setView(btn.dataset.view));
   }
   setView("list");
+
+  loadCardStats();
 });
+
+function formatStats(s) {
+  const parts = [];
+  if (s?.ratingCount) {
+    const avg = (s.ratingSum / s.ratingCount).toFixed(1);
+    parts.push(`★ ${avg} (${s.ratingCount})`);
+  }
+  if (s?.commentCount) parts.push(`💬 ${s.commentCount}`);
+  return parts.join("  ·  ");
+}
+
+function loadCardStats() {
+  if (!window.Trip?.configured) return;
+  window.Trip.getAllStats().then((stats) => {
+    for (const card of document.querySelectorAll(".card[data-slug]")) {
+      const slot = card.querySelector(".card-stats");
+      if (!slot) continue;
+      const s = stats[card.dataset.slug];
+      const txt = formatStats(s);
+      if (txt) slot.textContent = txt;
+    }
+  });
+}

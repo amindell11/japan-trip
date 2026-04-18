@@ -197,6 +197,7 @@ body[data-view="map"] #map { flex: 1; width: 100%; }
   transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
   color: inherit;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .card:hover {
@@ -205,12 +206,37 @@ body[data-view="map"] #map { flex: 1; width: 100%; }
   border-color: var(--accent);
 }
 
-.card-more {
+.card-actions {
   margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.card-more {
   font-size: 0.82rem;
   color: var(--accent);
   font-weight: 600;
   letter-spacing: 0.01em;
+  text-decoration: none;
+}
+.card-more:hover { text-decoration: underline; }
+
+.card-directions {
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.card-directions:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
 }
 
 .card-img {
@@ -564,3 +590,146 @@ body[data-view="detail"] main { max-width: 960px; }
   .detail-hero-body { padding: 1rem 1.25rem 1.5rem; }
   .detail-body { grid-template-columns: 1fr; gap: 0.5rem; }
 }
+
+/* Auth slot */
+.auth-slot {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  margin-left: auto;
+}
+.auth-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.auth-name { color: var(--muted); }
+.auth-btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: var(--fg);
+  transition: all 0.15s;
+}
+.auth-btn:hover { border-color: var(--muted); }
+.auth-btn.primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.auth-btn.primary:hover { filter: brightness(1.05); }
+.auth-btn:disabled { opacity: 0.6; cursor: default; }
+.auth-disabled {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Card stats badge */
+.card-stats {
+  font-size: 0.78rem;
+  color: var(--muted);
+  min-height: 0;
+}
+.card-stats:empty { display: none; }
+
+/* Stars */
+.stars {
+  display: inline-flex;
+  gap: 2px;
+  font-size: 1.15rem;
+  line-height: 1;
+  color: #dcdcdc;
+}
+.stars .star.filled { color: #f5b301; }
+.stars.interactive .star { transition: color 0.1s; }
+.stars.interactive .star.hover { color: #f5b301; }
+
+/* Reviews */
+.detail-reviews .reviews-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.reviews-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.reviews-avg { font-size: 0.9rem; }
+.reviews-your {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+}
+.your-label { color: var(--muted); }
+
+.comments {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.comment {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+}
+.comment-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.35rem;
+}
+.comment-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.comment-name { font-size: 0.88rem; }
+.comment-time { font-size: 0.75rem; }
+.comment-delete {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.comment-delete:hover { color: var(--accent); }
+.comment-text {
+  margin: 0;
+  font-size: 0.92rem;
+  white-space: pre-wrap;
+}
+.no-comments { margin: 0; font-size: 0.9rem; }
+
+.comment-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.comment-input-wrap textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.65rem 0.8rem;
+  font: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+  background: var(--surface);
+  color: var(--fg);
+}
+.comment-input-wrap textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.comment-actions { display: flex; justify-content: flex-end; }
