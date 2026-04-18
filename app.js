@@ -235,9 +235,69 @@ function makeMarker(place) {
 
 let map;
 let markersLayer;
+let staysLayer;
 let currentBounds;
 let allPlacesList = [];
 let currentFilter = "all";
+let hotelsByCity = {};
+let showStays = false;
+
+async function loadHotels() {
+  try {
+    const res = await fetch("hotels.json");
+    if (!res.ok) return;
+    const data = await res.json();
+    hotelsByCity = data.cities || {};
+  } catch {
+    hotelsByCity = {};
+  }
+}
+
+function makeHotelMarker(hotel, city) {
+  const color = CITY_COLORS[city] || "#444";
+  const icon = L.divIcon({
+    className: "pin",
+    html: `<div class="hotel-pin" style="--c:${color}"><span>${hotel.score}</span></div>`,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+  });
+  const m = L.marker([hotel.lat, hotel.lng], { icon, title: hotel.name });
+  const price = hotel.priceY ? `¥${hotel.priceY.toLocaleString()}+` : "—";
+  const rating = hotel.rating
+    ? `⭐ ${hotel.rating} <span class="hotel-reviews">(${hotel.reviews})</span>`
+    : "";
+  m.bindPopup(`
+    <div class="popup hotel-popup">
+      ${hotel.image ? `<img src="${hotel.image}" alt="" class="hotel-thumb" loading="lazy" />` : ""}
+      <div class="popup-city" style="color:${color}">${city} · score ${hotel.score}/100</div>
+      <h4>${hotel.name}</h4>
+      <div class="hotel-meta">
+        ${rating ? `<span>${rating}</span>` : ""}
+        <span class="hotel-price">${price}/night</span>
+      </div>
+      <p class="hotel-dist">${hotel.distanceKm} km to ${hotel.nearest}</p>
+      <a class="popup-more" href="${hotel.url}" target="_blank" rel="noopener">Book on Rakuten →</a>
+    </div>
+  `);
+  return m;
+}
+
+function renderStays() {
+  if (!staysLayer) staysLayer = L.layerGroup();
+  staysLayer.clearLayers();
+  if (!showStays) {
+    if (map.hasLayer(staysLayer)) map.removeLayer(staysLayer);
+    return;
+  }
+  const cities =
+    currentFilter === "all" ? Object.keys(hotelsByCity) : [currentFilter];
+  for (const c of cities) {
+    for (const h of hotelsByCity[c] || []) {
+      staysLayer.addLayer(makeHotelMarker(h, c));
+    }
+  }
+  if (!map.hasLayer(staysLayer)) staysLayer.addTo(map);
+}
 
 function renderMarkers(places) {
   if (!markersLayer) {
@@ -287,7 +347,7 @@ function initMap() {
 
 function applyFilter(city) {
   currentFilter = city;
-  for (const chip of document.querySelectorAll(".chip")) {
+  for (const chip of document.querySelectorAll(".chip[data-city]")) {
     chip.classList.toggle("active", chip.dataset.city === city);
   }
   const filtered =
@@ -295,6 +355,14 @@ function applyFilter(city) {
       ? allPlacesList
       : allPlacesList.filter((p) => p.city === city);
   renderMarkers(filtered);
+  renderStays();
+}
+
+function toggleStays() {
+  showStays = !showStays;
+  const btn = document.querySelector(".chip.stays-toggle");
+  if (btn) btn.classList.toggle("active", showStays);
+  renderStays();
 }
 
 function renderFilterBar(cities) {
@@ -308,6 +376,14 @@ function renderFilterBar(cities) {
   };
   bar.appendChild(makeChip("All", "all"));
   for (const c of cities) bar.appendChild(makeChip(c, c));
+
+  const sep = el("span", "filter-sep");
+  bar.appendChild(sep);
+
+  const stays = el("button", "chip stays-toggle", "🏨 Stays");
+  stays.title = "Toggle scored hotels near your places";
+  stays.addEventListener("click", toggleStays);
+  bar.appendChild(stays);
 }
 
 function setView(view) {
@@ -323,7 +399,7 @@ function setView(view) {
   }
 }
 
-getTripData().then((data) => {
+Promise.all([getTripData(), loadHotels()]).then(([data]) => {
   document.querySelector("h1.site-title").textContent = data.title;
   document.title = data.title;
 
