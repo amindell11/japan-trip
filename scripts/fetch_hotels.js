@@ -19,6 +19,44 @@ if (!APP_ID || !ACCESS_KEY) {
 const ENDPOINT =
   "https://openapi.rakuten.co.jp/engine/api/Travel/VacantHotelSearch/20170426";
 
+const TRANSLATE_ENDPOINT =
+  "https://translate.googleapis.com/translate_a/single";
+const TRANSLATION_CACHE_PATH = path.join(__dirname, "translations.json");
+
+let translationCache = {};
+try {
+  translationCache = JSON.parse(fs.readFileSync(TRANSLATION_CACHE_PATH, "utf8"));
+} catch {}
+
+function saveTranslationCache() {
+  fs.writeFileSync(
+    TRANSLATION_CACHE_PATH,
+    JSON.stringify(translationCache, null, 2)
+  );
+}
+
+async function translate(text) {
+  if (!text) return text;
+  if (translationCache[text]) return translationCache[text];
+  const url = new URL(TRANSLATE_ENDPOINT);
+  url.searchParams.set("client", "gtx");
+  url.searchParams.set("sl", "ja");
+  url.searchParams.set("tl", "en");
+  url.searchParams.set("dt", "t");
+  url.searchParams.set("q", text);
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return text;
+    const data = await res.json();
+    const segments = data?.[0] || [];
+    const translated = segments.map((s) => s[0]).join("").trim();
+    translationCache[text] = translated || text;
+    return translationCache[text];
+  } catch {
+    return text;
+  }
+}
+
 const GUESTS = { adults: 4, rooms: 2 };
 
 // One entry per hotel booking in the itinerary.
@@ -254,12 +292,20 @@ async function main() {
     const scored = scoreHotels(unique, places);
     scored.sort((a, b) => b.score - a.score);
     const nights = nightsBetween(stay.checkin, stay.checkout);
-    const top = scored.slice(0, 6).map((e) => {
+    const top = [];
+    for (const e of scored.slice(0, 6)) {
       const priceNightY = e.priceY || 0;
       const priceTotalY = priceNightY * nights;
-      return {
+      const addressJa = `${e.hotel.address1 || ""}${e.hotel.address2 || ""}`;
+      const [name, access, address] = await Promise.all([
+        translate(e.hotel.hotelName),
+        translate(e.hotel.access),
+        translate(addressJa),
+      ]);
+      top.push({
         hotelNo: e.hotel.hotelNo,
-        name: e.hotel.hotelName,
+        name,
+        nameJa: e.hotel.hotelName,
         score: e.score,
         priceNightY,
         priceNightUsd: Math.round(priceNightY / USD_RATE),
@@ -271,12 +317,13 @@ async function main() {
         nearest: e.nearestPlace,
         lat: e.hotel.latitude,
         lng: e.hotel.longitude,
-        access: e.hotel.access,
-        address: `${e.hotel.address1 || ""}${e.hotel.address2 || ""}`,
+        access,
+        address,
         image: e.hotel.hotelThumbnailUrl,
         url: e.hotel.hotelInformationUrl,
-      };
-    });
+      });
+      await sleep(120);
+    }
 
     output.legs.push({
       id: stay.id,
@@ -289,6 +336,7 @@ async function main() {
     });
   }
 
+  saveTranslationCache();
   const outPath = path.join(__dirname, "..", "hotels.json");
   fs.writeFileSync(outPath, JSON.stringify(output, null, 2));
   console.log(`\nWrote ${outPath}`);

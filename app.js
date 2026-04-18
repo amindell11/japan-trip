@@ -345,6 +345,9 @@ function renderStayCard(hotel, leg) {
 
   const body = el("div", "stay-body");
   body.appendChild(el("h3", "stay-name", hotel.name));
+  if (hotel.nameJa && hotel.nameJa !== hotel.name) {
+    body.appendChild(el("p", "stay-name-ja", hotel.nameJa));
+  }
 
   const meta = el("div", "stay-meta");
   if (hotel.rating) {
