@@ -260,7 +260,11 @@ function hotelPriceLine(hotel, nights) {
     hotel.priceTotalY && nights > 1
       ? `${nights}n total ≈ ¥${hotel.priceTotalY.toLocaleString()} / $${hotel.priceTotalUsd}`
       : "";
-  return { perNight: pn, total: pt };
+  const pp =
+    hotel.priceTotalY
+      ? `≈ $${Math.round(hotel.priceTotalUsd / 4)} per person`
+      : "";
+  return { perNight: pn, total: pt, perPerson: pp };
 }
 
 function makeHotelMarker(hotel, leg) {
@@ -283,9 +287,10 @@ function makeHotelMarker(hotel, leg) {
       <h4>${hotel.name}</h4>
       <div class="hotel-meta">
         ${rating ? `<span>${rating}</span>` : ""}
-        <span class="hotel-price">${price.perNight}/night</span>
+        <span class="hotel-price">${price.perNight}/night · 4 guests</span>
       </div>
-      ${price.total ? `<p class="hotel-dist">${price.total}</p>` : ""}
+      ${price.total ? `<p class="hotel-dist">${price.total} · ${price.perPerson}</p>` : `<p class="hotel-dist">${price.perPerson}</p>`}
+      ${hotel.roomType ? `<p class="hotel-dist">🛏️ ${hotel.roomType}</p>` : ""}
       <p class="hotel-dist">${hotel.distanceKm} km to ${hotel.nearest}</p>
       <a class="popup-more" href="${hotel.url}" target="_blank" rel="noopener">Book on Rakuten →</a>
     </div>
@@ -371,10 +376,14 @@ function renderStayCard(hotel, leg) {
   const price = hotelPriceLine(hotel, leg.nights);
   const priceEl = el("div", "stay-price");
   priceEl.innerHTML = `
-    <span class="stay-price-night">${price.perNight}</span><span class="muted"> /night</span>
-    ${price.total ? `<span class="stay-price-total">${price.total}</span>` : ""}
+    <span class="stay-price-night">${price.perNight}</span><span class="muted"> /night · 4 guests</span>
+    ${price.total ? `<span class="stay-price-total">${price.total} · ${price.perPerson}</span>` : `<span class="stay-price-total">${price.perPerson}</span>`}
   `;
   body.appendChild(priceEl);
+
+  if (hotel.roomType) {
+    body.appendChild(el("p", "stay-room", hotel.roomType));
+  }
 
   const cta = el("span", "stay-cta", "Book on Rakuten →");
   body.appendChild(cta);

@@ -996,3 +996,17 @@ body[data-view="detail"] main { max-width: 960px; }
   color: var(--muted);
   font-weight: 400;
 }
+
+.stay-room {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  background: #f4f1ec;
+  padding: 0.3rem 0.55rem;
+  border-radius: 5px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

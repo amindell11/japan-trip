@@ -182,7 +182,37 @@ async function fetchOnce(params) {
   }
 }
 
-async function searchCenter(stay, center) {
+// Pull the cheapest plan's real total for the configured guests from roomInfo.
+function extractCheapestPlan(hotelArr, nights) {
+  let best = null;
+  for (const item of hotelArr) {
+    if (!item.roomInfo) continue;
+    const basic = item.roomInfo.find((x) => x.roomBasicInfo)?.roomBasicInfo;
+    const days = item.roomInfo
+      .filter((x) => x.dailyCharge)
+      .map((x) => x.dailyCharge);
+    if (!days.length) continue;
+    // Rakuten sometimes returns only one day's charge — assume nightly rate is
+    // constant and multiply. When multiple days are returned, sum them.
+    const perNightTotal =
+      days.length >= nights
+        ? days.reduce((s, d) => s + (d.total || 0), 0) / nights
+        : days[0]?.total || 0;
+    const tripTotal = perNightTotal * nights;
+    if (!tripTotal) continue;
+    if (!best || tripTotal < best.tripTotal) {
+      best = {
+        tripTotal,
+        perNightTotal,
+        roomName: basic?.roomName || null,
+        planName: basic?.planName || null,
+      };
+    }
+  }
+  return best;
+}
+
+async function searchCenter(stay, center, nights) {
   console.log(`  [${stay.id}] ${center.name}`);
   const results = [];
   let page = 1;
@@ -201,7 +231,9 @@ async function searchCenter(stay, center) {
     const hotels = json.hotels || [];
     for (const h of hotels) {
       const basic = h.hotel?.[0]?.hotelBasicInfo;
-      if (basic) results.push(basic);
+      if (!basic) continue;
+      const plan = extractCheapestPlan(h.hotel, nights);
+      results.push({ ...basic, _plan: plan });
     }
     const pi = json.pagingInfo;
     if (!pi || pi.page >= pi.pageCount || page >= 10) break;
@@ -225,33 +257,38 @@ function normalize01(v, min, max) {
 const W = { price: 0.4, distance: 0.35, rating: 0.25 };
 
 function scoreHotels(hotels, userPlaces) {
-  const enriched = hotels.map((h) => {
-    const near = nearestPlaceKm(
-      { lat: h.latitude, lng: h.longitude },
-      userPlaces
-    );
-    return {
-      hotel: h,
-      distanceKm: near.km,
-      nearestPlace: near.name,
-      priceY: h.hotelMinCharge || null,
-      rating: h.reviewAverage || null,
-      reviews: h.reviewCount || 0,
-    };
-  });
+  const enriched = hotels
+    .map((h) => {
+      const near = nearestPlaceKm(
+        { lat: h.latitude, lng: h.longitude },
+        userPlaces
+      );
+      return {
+        hotel: h,
+        distanceKm: near.km,
+        nearestPlace: near.name,
+        tripTotalY: h._plan?.tripTotal || null,
+        perNightTotalY: h._plan?.perNightTotal || null,
+        roomNameJa: h._plan?.roomName || null,
+        planNameJa: h._plan?.planName || null,
+        rating: h.reviewAverage || null,
+        reviews: h.reviewCount || 0,
+      };
+    })
+    // Drop hotels where we couldn't resolve a real plan price.
+    .filter((e) => e.tripTotalY);
 
-  const prices = enriched.map((e) => e.priceY).filter((p) => p != null);
+  const prices = enriched.map((e) => e.tripTotalY);
   const dists = enriched.map((e) => e.distanceKm);
-  const pMin = prices.length ? Math.min(...prices) : 0;
-  const pMax = prices.length ? Math.max(...prices) : 1;
+  const pMin = Math.min(...prices);
+  const pMax = Math.max(...prices);
   const dMin = Math.min(...dists);
   const dMax = Math.max(...dists);
 
   return enriched.map((e) => {
     const bayes = bayesianRating(e.rating, e.reviews);
     const ratingScore = ((bayes - 1) / 4) * 100;
-    const priceScore =
-      e.priceY == null ? 40 : (1 - normalize01(e.priceY, pMin, pMax)) * 100;
+    const priceScore = (1 - normalize01(e.tripTotalY, pMin, pMax)) * 100;
     const distanceScore = (1 - normalize01(e.distanceKm, dMin, dMax)) * 100;
     const score =
       W.price * priceScore + W.distance * distanceScore + W.rating * ratingScore;
@@ -279,10 +316,11 @@ async function main() {
   };
 
   for (const stay of STAYS) {
-    console.log(`\n=== ${stay.label} (${stay.checkin} → ${stay.checkout}) ===`);
+    const nights = nightsBetween(stay.checkin, stay.checkout);
+    console.log(`\n=== ${stay.label} (${stay.checkin} → ${stay.checkout}, ${nights}n) ===`);
     let all = [];
     for (const c of stay.centers) {
-      const batch = await searchCenter(stay, c);
+      const batch = await searchCenter(stay, c, nights);
       all = all.concat(batch);
       await sleep(1200);
     }
@@ -291,26 +329,31 @@ async function main() {
     const places = USER_PLACES[stay.city] || [];
     const scored = scoreHotels(unique, places);
     scored.sort((a, b) => b.score - a.score);
-    const nights = nightsBetween(stay.checkin, stay.checkout);
     const top = [];
     for (const e of scored.slice(0, 6)) {
-      const priceNightY = e.priceY || 0;
-      const priceTotalY = priceNightY * nights;
+      const priceNightY = Math.round(e.perNightTotalY);
+      const priceTotalY = Math.round(e.tripTotalY);
       const addressJa = `${e.hotel.address1 || ""}${e.hotel.address2 || ""}`;
-      const [name, access, address] = await Promise.all([
+      const [name, access, address, roomType] = await Promise.all([
         translate(e.hotel.hotelName),
         translate(e.hotel.access),
         translate(addressJa),
+        translate(e.roomNameJa),
       ]);
       top.push({
         hotelNo: e.hotel.hotelNo,
         name,
         nameJa: e.hotel.hotelName,
         score: e.score,
+        // All prices are TOTALS for 4 guests in 2 rooms.
         priceNightY,
         priceNightUsd: Math.round(priceNightY / USD_RATE),
         priceTotalY,
         priceTotalUsd: Math.round(priceTotalY / USD_RATE),
+        priceNightPerPersonY: Math.round(priceNightY / GUESTS.adults),
+        priceNightPerPersonUsd: Math.round(priceNightY / GUESTS.adults / USD_RATE),
+        roomType: roomType || null,
+        roomTypeJa: e.roomNameJa || null,
         rating: e.rating,
         reviews: e.reviews,
         distanceKm: Math.round(e.distanceKm * 100) / 100,
