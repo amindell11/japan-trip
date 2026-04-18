@@ -18,6 +18,9 @@ const TRIP_DATA = {
               tags: ["urban", "iconic", "nightlife"],
               wiki: "Shibuya_Crossing",
               coords: [35.6595, 139.7004],
+              links: [
+                { label: "Shibuya Sky (observation deck)", url: "https://www.shibuya-scramble-square.com/sky/en/" },
+              ],
             },
             {
               name: "Shinjuku / Golden Gai",
@@ -44,6 +47,9 @@ const TRIP_DATA = {
               tags: ["temple", "historic", "cultural"],
               wiki: "Sensō-ji",
               coords: [35.7148, 139.7967],
+              links: [
+                { label: "Official site", url: "https://www.senso-ji.jp/" },
+              ],
             },
             {
               name: "Akihabara",
@@ -62,6 +68,10 @@ const TRIP_DATA = {
               tags: ["park", "museum", "chill"],
               wiki: "Ueno_Park",
               coords: [35.7148, 139.7731],
+              links: [
+                { label: "Tokyo National Museum", url: "https://www.tnm.jp/?lang=en" },
+                { label: "Ueno Zoo", url: "https://www.tokyo-zoo.net/english/ueno/" },
+              ],
             },
             {
               name: "Meiji Shrine",
@@ -71,6 +81,9 @@ const TRIP_DATA = {
               tags: ["shrine", "nature", "cultural"],
               wiki: "Meiji_Shrine",
               coords: [35.6764, 139.6993],
+              links: [
+                { label: "Official site", url: "https://www.meijijingu.or.jp/en/" },
+              ],
             },
             {
               name: "Samurai Experience",
@@ -79,6 +92,9 @@ const TRIP_DATA = {
               tags: ["cultural", "activity"],
               wiki: "Samurai",
               coords: [35.6938, 139.7036],
+              links: [
+                { label: "Samurai Museum Shinjuku", url: "https://www.samuraimuseum.jp/" },
+              ],
             },
             {
               name: "Beach Day / Enoshima",
@@ -88,6 +104,9 @@ const TRIP_DATA = {
               tags: ["beach", "day-trip"],
               wiki: "Enoshima",
               coords: [35.2994, 139.4800],
+              links: [
+                { label: "Enoshima visitor info", url: "https://enoshima-seacandle.com/en/" },
+              ],
             },
             {
               name: "Onsen / Hot Springs",
@@ -109,6 +128,9 @@ const TRIP_DATA = {
               tags: ["anime", "shopping", "local"],
               wiki: "Nakano_Broadway",
               coords: [35.7084, 139.6654],
+              links: [
+                { label: "Nakano Broadway", url: "https://nbw.jp/" },
+              ],
             },
             {
               name: "Koenji",
@@ -127,6 +149,10 @@ const TRIP_DATA = {
               tags: ["park", "ghibli", "local"],
               wiki: "Kichijōji",
               coords: [35.7002, 139.5795],
+              links: [
+                { label: "Ghibli Museum", url: "https://www.ghibli-museum.jp/en/" },
+                { label: "Ghibli tickets (Lawson)", url: "https://l-tike.com/ghibli-museum/" },
+              ],
             },
           ],
         },
@@ -150,6 +176,9 @@ const TRIP_DATA = {
               tags: ["cafe", "shopping", "upscale"],
               wiki: "Daikanyama",
               coords: [35.6497, 139.7030],
+              links: [
+                { label: "Daikanyama T-Site", url: "https://store.tsite.jp/daikanyama/" },
+              ],
             },
             {
               name: "Jiyugaoka",
@@ -173,6 +202,9 @@ const TRIP_DATA = {
               tags: ["hike", "nature", "fuji-view"],
               wiki: "Mount_Takao",
               coords: [35.6254, 139.2437],
+              links: [
+                { label: "Cable car / chairlift", url: "https://www.takaotozan.co.jp/" },
+              ],
             },
             {
               name: "TeamLab Planets",
@@ -181,6 +213,9 @@ const TRIP_DATA = {
               tags: ["art", "immersive", "indoor"],
               wiki: "TeamLab",
               coords: [35.6493, 139.7901],
+              links: [
+                { label: "Official & tickets", url: "https://www.teamlab.art/e/planets/" },
+              ],
             },
           ],
         },
@@ -195,6 +230,10 @@ const TRIP_DATA = {
               tags: ["nature", "camping", "fuji-view"],
               wiki: "Lake_Kawaguchi",
               coords: [35.5142, 138.7530],
+              links: [
+                { label: "Mt. Fuji Panoramic Ropeway", url: "https://www.mtfujiropeway.jp/en/" },
+                { label: "Highway bus (Shinjuku → Kawaguchiko)", url: "https://highway-buses.jp/" },
+              ],
             },
             {
               name: "Kamakura & Enoshima",
@@ -204,6 +243,10 @@ const TRIP_DATA = {
               tags: ["historic", "beach", "day-trip"],
               wiki: "Kamakura",
               coords: [35.3193, 139.5466],
+              links: [
+                { label: "Kotoku-in (Great Buddha)", url: "https://www.kotoku-in.jp/en/" },
+                { label: "Enoden (Enoshima Electric Railway)", url: "https://www.enoden.co.jp/en/" },
+              ],
             },
             {
               name: "Kawagoe",
@@ -213,6 +256,9 @@ const TRIP_DATA = {
               tags: ["historic", "day-trip"],
               wiki: "Kawagoe,_Saitama",
               coords: [35.9251, 139.4858],
+              links: [
+                { label: "Kawagoe tourism", url: "https://www.koedo.or.jp/foreign/english/" },
+              ],
             },
             {
               name: "Hakone",
@@ -222,6 +268,10 @@ const TRIP_DATA = {
               tags: ["onsen", "day-trip", "fuji-view"],
               wiki: "Hakone,_Kanagawa",
               coords: [35.2321, 139.1069],
+              links: [
+                { label: "Hakone Ropeway", url: "https://www.hakoneropeway.co.jp/foreign/en/" },
+                { label: "Hakone Free Pass", url: "https://www.odakyu.jp/english/passes/hakone/" },
+              ],
             },
           ],
         },
@@ -240,6 +290,9 @@ const TRIP_DATA = {
               tags: ["shrine", "hike", "iconic"],
               wiki: "Fushimi_Inari-taisha",
               coords: [34.9671, 135.7727],
+              links: [
+                { label: "Official site", url: "https://inari.jp/en/" },
+              ],
             },
             {
               name: "Kinkaku-ji / Golden Pavilion",
@@ -248,6 +301,9 @@ const TRIP_DATA = {
               tags: ["temple", "iconic"],
               wiki: "Kinkaku-ji",
               coords: [35.0394, 135.7292],
+              links: [
+                { label: "Official site", url: "https://www.shokoku-ji.jp/kinkakuji/" },
+              ],
             },
             {
               name: "Gion District",
@@ -256,6 +312,9 @@ const TRIP_DATA = {
               tags: ["historic", "cultural", "nightlife"],
               wiki: "Gion",
               coords: [35.0036, 135.7778],
+              links: [
+                { label: "Gion Corner (traditional arts show)", url: "https://www.kyoto-gioncorner.com/global/en.html" },
+              ],
             },
             {
               name: "Philosopher's Path",
@@ -264,6 +323,10 @@ const TRIP_DATA = {
               tags: ["walking", "scenic", "chill"],
               wiki: "Philosopher's_Walk",
               coords: [35.0269, 135.7945],
+              links: [
+                { label: "Ginkaku-ji (north end)", url: "https://www.shokoku-ji.jp/ginkakuji/" },
+                { label: "Nanzen-ji (south end)", url: "https://www.nanzenji.or.jp/" },
+              ],
             },
             {
               name: "Tadasu no Mori",
@@ -272,6 +335,9 @@ const TRIP_DATA = {
               tags: ["shrine", "nature"],
               wiki: "Shimogamo_Shrine",
               coords: [35.0392, 135.7726],
+              links: [
+                { label: "Shimogamo Shrine", url: "https://www.shimogamo-jinja.or.jp/" },
+              ],
             },
             {
               name: "Samurai Kembu Kyoto",
@@ -280,6 +346,9 @@ const TRIP_DATA = {
               tags: ["cultural", "activity"],
               wiki: "Samurai",
               coords: [35.0054, 135.7738],
+              links: [
+                { label: "Official & booking", url: "https://www.samurai-kembu.jp/" },
+              ],
             },
           ],
         },
@@ -293,6 +362,10 @@ const TRIP_DATA = {
               tags: ["nature", "iconic"],
               wiki: "Arashiyama",
               coords: [35.0170, 135.6714],
+              links: [
+                { label: "Iwatayama Monkey Park", url: "https://monkeypark.jp/en/" },
+                { label: "Tenryu-ji Temple", url: "https://www.tenryuji.com/en/" },
+              ],
             },
           ],
         },
@@ -307,6 +380,10 @@ const TRIP_DATA = {
               tags: ["deer", "historic", "day-trip"],
               wiki: "Nara_Park",
               coords: [34.6851, 135.8430],
+              links: [
+                { label: "Todai-ji official", url: "https://www.todaiji.or.jp/en/" },
+                { label: "Nara tourism", url: "https://narashikanko.or.jp/en/" },
+              ],
             },
             {
               name: "Kasugayama Primeval Forest",
@@ -315,6 +392,9 @@ const TRIP_DATA = {
               tags: ["hike", "nature", "unesco"],
               wiki: "Kasugayama_Primeval_Forest",
               coords: [34.6828, 135.8614],
+              links: [
+                { label: "Kasuga Taisha shrine", url: "https://www.kasugataisha.or.jp/about_en/" },
+              ],
             },
           ],
         },
@@ -372,6 +452,9 @@ const TRIP_DATA = {
               tags: ["historic", "castle"],
               wiki: "Osaka_Castle",
               coords: [34.6873, 135.5259],
+              links: [
+                { label: "Official site", url: "https://www.osakacastle.net/english/" },
+              ],
             },
             {
               name: "Shinsekai",
@@ -380,6 +463,9 @@ const TRIP_DATA = {
               tags: ["food", "retro", "local"],
               wiki: "Shinsekai",
               coords: [34.6520, 135.5063],
+              links: [
+                { label: "Tsutenkaku Tower", url: "https://www.tsutenkaku.co.jp/en/" },
+              ],
             },
           ],
         },
@@ -402,6 +488,10 @@ const TRIP_DATA = {
               tags: ["theme-park"],
               wiki: "Universal_Studios_Japan",
               coords: [34.6654, 135.4323],
+              links: [
+                { label: "Official site", url: "https://www.usj.co.jp/web/en/us" },
+                { label: "Tickets", url: "https://www.usj.co.jp/web/en/us/tickets" },
+              ],
             },
           ],
         },
@@ -420,6 +510,10 @@ const TRIP_DATA = {
               tags: ["shrine", "hike", "day-trip"],
               wiki: "Itsukushima",
               coords: [34.2958, 132.3197],
+              links: [
+                { label: "Itsukushima Shrine", url: "https://www.itsukushimajinja.jp/en/" },
+                { label: "Miyajima Ropeway (Mt. Misen)", url: "https://miyajima-ropeway.info/english/" },
+              ],
             },
             {
               name: "Kamikochi",
@@ -428,6 +522,9 @@ const TRIP_DATA = {
               tags: ["nature", "hike", "alps"],
               wiki: "Kamikōchi",
               coords: [36.2477, 137.6368],
+              links: [
+                { label: "Kamikochi official (EN)", url: "https://www.kamikochi.or.jp/english/" },
+              ],
             },
           ],
         },
@@ -435,6 +532,36 @@ const TRIP_DATA = {
     },
   ],
 };
+
+function slugify(s) {
+  return s
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w\s-]/g, "")
+    .trim()
+    .replace(/[\s_-]+/g, "-");
+}
+
+function eachPlace(data, fn) {
+  for (const section of data.sections) {
+    for (const group of section.groups) {
+      for (const place of group.places) {
+        fn(place, { section, group });
+      }
+    }
+  }
+}
+
+function findPlaceBySlug(data, slug) {
+  let found = null;
+  eachPlace(data, (place, ctx) => {
+    if (!found && slugify(place.name) === slug) {
+      found = { place, ...ctx };
+    }
+  });
+  return found;
+}
 
 function getTripData() {
   return Promise.resolve(TRIP_DATA);

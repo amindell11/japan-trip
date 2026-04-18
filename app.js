@@ -7,6 +7,66 @@ const CITY_COLORS = {
   "Optional Add-ons": "#c08a2e",
 };
 
+const TAG_ICONS = {
+  temple: "🛕",
+  shrine: "⛩️",
+  castle: "🏯",
+  historic: "🏯",
+  "fuji-view": "🗻",
+  alps: "🏔️",
+  hike: "🥾",
+  waterfall: "💦",
+  nature: "🌲",
+  park: "🌳",
+  beach: "🏖️",
+  camping: "⛺",
+  glamping: "⛺",
+  onsen: "♨️",
+  wellness: "♨️",
+  "theme-park": "🎢",
+  anime: "🎮",
+  arcades: "🕹️",
+  art: "🎨",
+  immersive: "🎨",
+  food: "🍜",
+  nightlife: "🍻",
+  drinks: "🍶",
+  cafe: "☕",
+  dessert: "🍰",
+  shopping: "🛍️",
+  fashion: "👗",
+  vintage: "👕",
+  deer: "🦌",
+  ghibli: "🌀",
+  unesco: "🏛️",
+  walking: "🚶",
+  scenic: "🌄",
+  water: "💧",
+  urban: "🏙️",
+  cultural: "🎎",
+  activity: "🎯",
+  retro: "📼",
+  "day-trip": "🚆",
+  iconic: "⭐",
+};
+
+const ICON_PRIORITY = [
+  "temple", "shrine", "castle", "fuji-view", "alps", "hike", "waterfall",
+  "beach", "camping", "glamping", "onsen", "theme-park", "anime", "art",
+  "deer", "ghibli", "food", "nightlife", "dessert", "cafe", "fashion",
+  "vintage", "park", "nature", "historic", "shopping", "walking",
+];
+
+function iconFor(place) {
+  for (const p of ICON_PRIORITY) {
+    if (place.tags?.includes(p)) return TAG_ICONS[p];
+  }
+  for (const t of place.tags || []) {
+    if (TAG_ICONS[t]) return TAG_ICONS[t];
+  }
+  return "📍";
+}
+
 async function fetchThumb(title) {
   if (!title) return null;
   try {
@@ -28,7 +88,6 @@ function el(tag, className, html) {
 
 function renderPlace(place) {
   const card = el("article", "card");
-
   const imgWrap = el("div", "card-img");
   card.appendChild(imgWrap);
 
@@ -41,6 +100,21 @@ function renderPlace(place) {
     const tags = el("div", "tags");
     for (const t of place.tags) tags.appendChild(el("span", "tag", t));
     body.appendChild(tags);
+  }
+
+  if (place.links?.length) {
+    const links = el("ul", "links");
+    for (const l of place.links) {
+      const li = document.createElement("li");
+      const a = document.createElement("a");
+      a.href = l.url;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = l.label;
+      li.appendChild(a);
+      links.appendChild(li);
+    }
+    body.appendChild(links);
   }
 
   card.appendChild(body);
@@ -101,15 +175,30 @@ function allPlaces(data) {
 
 function makeMarker(place) {
   const color = CITY_COLORS[place.city] || "#444";
+  const emoji = iconFor(place);
   const icon = L.divIcon({
     className: "pin",
-    html: `<span class="pin-dot" style="background:${color}"></span>`,
-    iconSize: [18, 18],
-    iconAnchor: [9, 9],
+    html: `<div class="pin-pill" style="--c:${color}"><span>${emoji}</span></div>`,
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
   });
-  const marker = L.marker(place.coords, { icon });
+  const marker = L.marker(place.coords, { icon, title: place.name });
+
+  marker.bindTooltip(place.name, {
+    permanent: true,
+    direction: "right",
+    offset: [14, 0],
+    className: "place-label",
+  });
+
   const tags = (place.tags || [])
     .map((t) => `<span class="tag">${t}</span>`)
+    .join("");
+  const links = (place.links || [])
+    .map(
+      (l) =>
+        `<li><a href="${l.url}" target="_blank" rel="noopener">${l.label}</a></li>`
+    )
     .join("");
   marker.bindPopup(`
     <div class="popup">
@@ -117,25 +206,50 @@ function makeMarker(place) {
       <h4>${place.name}</h4>
       <p>${place.summary}</p>
       <div class="tags">${tags}</div>
+      ${links ? `<ul class="links">${links}</ul>` : ""}
     </div>
   `);
   return marker;
 }
 
 let map;
-function initMap(places) {
-  if (map) return;
-  map = L.map("map", { scrollWheelZoom: true }).setView([35.5, 137.0], 6);
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "© OpenStreetMap contributors",
-    maxZoom: 19,
-  }).addTo(map);
+let markersLayer;
+let currentBounds;
+let allPlacesList = [];
+let currentFilter = "all";
 
+function renderMarkers(places) {
+  if (!markersLayer) {
+    markersLayer = L.layerGroup().addTo(map);
+  } else {
+    markersLayer.clearLayers();
+  }
   const markers = places.map(makeMarker);
-  const group = L.featureGroup(markers).addTo(map);
-  map.fitBounds(group.getBounds().pad(0.1));
+  for (const m of markers) markersLayer.addLayer(m);
+  if (markers.length) {
+    const group = L.featureGroup(markers);
+    currentBounds = group.getBounds().pad(0.15);
+    map.fitBounds(currentBounds, { animate: true });
+  }
+}
 
-  // Legend
+function initMap() {
+  if (map) return;
+  map = L.map("map", {
+    scrollWheelZoom: true,
+    zoomControl: true,
+  }).setView([36, 137], 5);
+  L.tileLayer(
+    "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+    {
+      attribution:
+        '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: "abcd",
+      maxZoom: 19,
+    }
+  ).addTo(map);
+  renderMarkers(allPlacesList);
+
   const legend = L.control({ position: "bottomright" });
   legend.onAdd = () => {
     const div = L.DomUtil.create("div", "legend");
@@ -150,13 +264,41 @@ function initMap(places) {
   legend.addTo(map);
 }
 
+function applyFilter(city) {
+  currentFilter = city;
+  for (const chip of document.querySelectorAll(".chip")) {
+    chip.classList.toggle("active", chip.dataset.city === city);
+  }
+  const filtered =
+    city === "all"
+      ? allPlacesList
+      : allPlacesList.filter((p) => p.city === city);
+  renderMarkers(filtered);
+}
+
+function renderFilterBar(cities) {
+  const bar = document.getElementById("filter-bar");
+  const makeChip = (label, value) => {
+    const btn = el("button", "chip", label);
+    btn.dataset.city = value;
+    if (value === currentFilter) btn.classList.add("active");
+    btn.addEventListener("click", () => applyFilter(value));
+    return btn;
+  };
+  bar.appendChild(makeChip("All", "all"));
+  for (const c of cities) bar.appendChild(makeChip(c, c));
+}
+
 function setView(view) {
   document.body.dataset.view = view;
   for (const btn of document.querySelectorAll(".tab")) {
     btn.classList.toggle("active", btn.dataset.view === view);
   }
-  if (view === "map" && map) {
-    setTimeout(() => map.invalidateSize(), 50);
+  if (view === "map") {
+    setTimeout(() => {
+      map.invalidateSize();
+      if (currentBounds) map.fitBounds(currentBounds, { animate: false });
+    }, 50);
   }
 }
 
@@ -168,7 +310,9 @@ getTripData().then((data) => {
   const list = document.getElementById("list-view");
   for (const s of data.sections) list.appendChild(renderSection(s));
 
-  initMap(allPlaces(data));
+  allPlacesList = allPlaces(data);
+  renderFilterBar(data.sections.map((s) => s.name));
+  initMap();
 
   for (const btn of document.querySelectorAll(".tab")) {
     btn.addEventListener("click", () => setView(btn.dataset.view));
