@@ -1,5 +1,12 @@
 const WIKI_SUMMARY = "https://en.wikipedia.org/api/rest_v1/page/summary/";
 
+const CITY_COLORS = {
+  Tokyo: "#d64545",
+  Kyoto: "#7a4fa8",
+  Osaka: "#2e8b8b",
+  "Optional Add-ons": "#c08a2e",
+};
+
 async function fetchThumb(title) {
   if (!title) return null;
   try {
@@ -80,10 +87,91 @@ function renderNav(sections) {
   }
 }
 
+function allPlaces(data) {
+  const out = [];
+  for (const s of data.sections) {
+    for (const g of s.groups) {
+      for (const p of g.places) {
+        if (p.coords) out.push({ ...p, city: s.name, group: g.name });
+      }
+    }
+  }
+  return out;
+}
+
+function makeMarker(place) {
+  const color = CITY_COLORS[place.city] || "#444";
+  const icon = L.divIcon({
+    className: "pin",
+    html: `<span class="pin-dot" style="background:${color}"></span>`,
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+  });
+  const marker = L.marker(place.coords, { icon });
+  const tags = (place.tags || [])
+    .map((t) => `<span class="tag">${t}</span>`)
+    .join("");
+  marker.bindPopup(`
+    <div class="popup">
+      <div class="popup-city" style="color:${color}">${place.city} · ${place.group}</div>
+      <h4>${place.name}</h4>
+      <p>${place.summary}</p>
+      <div class="tags">${tags}</div>
+    </div>
+  `);
+  return marker;
+}
+
+let map;
+function initMap(places) {
+  if (map) return;
+  map = L.map("map", { scrollWheelZoom: true }).setView([35.5, 137.0], 6);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "© OpenStreetMap contributors",
+    maxZoom: 19,
+  }).addTo(map);
+
+  const markers = places.map(makeMarker);
+  const group = L.featureGroup(markers).addTo(map);
+  map.fitBounds(group.getBounds().pad(0.1));
+
+  // Legend
+  const legend = L.control({ position: "bottomright" });
+  legend.onAdd = () => {
+    const div = L.DomUtil.create("div", "legend");
+    div.innerHTML = Object.entries(CITY_COLORS)
+      .map(
+        ([name, color]) =>
+          `<div><span class="pin-dot" style="background:${color}"></span>${name}</div>`
+      )
+      .join("");
+    return div;
+  };
+  legend.addTo(map);
+}
+
+function setView(view) {
+  document.body.dataset.view = view;
+  for (const btn of document.querySelectorAll(".tab")) {
+    btn.classList.toggle("active", btn.dataset.view === view);
+  }
+  if (view === "map" && map) {
+    setTimeout(() => map.invalidateSize(), 50);
+  }
+}
+
 getTripData().then((data) => {
   document.querySelector("h1.site-title").textContent = data.title;
   document.title = data.title;
+
   renderNav(data.sections);
-  const root = document.getElementById("content");
-  for (const s of data.sections) root.appendChild(renderSection(s));
+  const list = document.getElementById("list-view");
+  for (const s of data.sections) list.appendChild(renderSection(s));
+
+  initMap(allPlaces(data));
+
+  for (const btn of document.querySelectorAll(".tab")) {
+    btn.addEventListener("click", () => setView(btn.dataset.view));
+  }
+  setView("list");
 });

@@ -17,6 +17,7 @@ const TRIP_DATA = {
                 "The world's busiest pedestrian crossing. Best at dusk with the neon signs lighting up. Gateway to Shibuya's shopping and nightlife.",
               tags: ["urban", "iconic", "nightlife"],
               wiki: "Shibuya_Crossing",
+              coords: [35.6595, 139.7004],
             },
             {
               name: "Shinjuku / Golden Gai",
@@ -24,6 +25,7 @@ const TRIP_DATA = {
                 "Tokyo's biggest transit hub surrounded by shopping and restaurants. Golden Gai is a maze of 200+ tiny themed bars seating 5–10 people each — perfect for a group night out.",
               tags: ["nightlife", "food", "drinks"],
               wiki: "Golden_Gai",
+              coords: [35.6938, 139.7036],
             },
             {
               name: "Harajuku / Takeshita Street",
@@ -32,6 +34,7 @@ const TRIP_DATA = {
                 "Youth fashion capital. Takeshita Street is packed with wild fashion shops, crepe stands, and quirky cafes. Adjacent to Meiji Shrine and Yoyogi Park.",
               tags: ["fashion", "shopping", "food"],
               wiki: "Takeshita_Street",
+              coords: [35.6716, 139.7031],
             },
             {
               name: "Asakusa / Senso-ji Temple",
@@ -40,6 +43,7 @@ const TRIP_DATA = {
                 "Tokyo's oldest Buddhist temple with the iconic red lantern gate. Nakamise-dori leading up to it is lined with snack shops and souvenirs.",
               tags: ["temple", "historic", "cultural"],
               wiki: "Sensō-ji",
+              coords: [35.7148, 139.7967],
             },
             {
               name: "Akihabara",
@@ -48,6 +52,7 @@ const TRIP_DATA = {
                 "'Electric Town' — anime, manga, retro games, electronics. Multi-story arcades and maid cafes. The touristy version of what Nakano Broadway does more authentically.",
               tags: ["anime", "shopping", "arcades"],
               wiki: "Akihabara",
+              coords: [35.7022, 139.7745],
             },
             {
               name: "Ueno Park",
@@ -56,6 +61,7 @@ const TRIP_DATA = {
                 "Massive park with museums, a zoo, shrines, and Shinobazu Pond. Good for a relaxed morning or rainy-day museum hopping.",
               tags: ["park", "museum", "chill"],
               wiki: "Ueno_Park",
+              coords: [35.7148, 139.7731],
             },
             {
               name: "Meiji Shrine",
@@ -64,6 +70,7 @@ const TRIP_DATA = {
                 "170 acres of forest surrounding a serene shrine. Pairs with Harajuku and Takeshita Street since they're adjacent.",
               tags: ["shrine", "nature", "cultural"],
               wiki: "Meiji_Shrine",
+              coords: [35.6764, 139.6993],
             },
             {
               name: "Samurai Experience",
@@ -71,6 +78,7 @@ const TRIP_DATA = {
                 "Multiple options in Asakusa and Shinjuku. Samurai Museum Shinjuku has sword-cutting classes. Also available in Kyoto if you'd rather do it there.",
               tags: ["cultural", "activity"],
               wiki: "Samurai",
+              coords: [35.6938, 139.7036],
             },
             {
               name: "Beach Day / Enoshima",
@@ -79,6 +87,7 @@ const TRIP_DATA = {
                 "Part of the Kamakura day trip. Enoshima island has a small beach, and the nearby Shonan coast (Yuigahama, Zushi) has longer stretches of sand.",
               tags: ["beach", "day-trip"],
               wiki: "Enoshima",
+              coords: [35.2994, 139.4800],
             },
             {
               name: "Onsen / Hot Springs",
@@ -99,6 +108,7 @@ const TRIP_DATA = {
                 "Nakano Broadway is the locals' alternative to Akihabara: retro anime, vintage toys, manga at better prices with zero tourist crowds. Great food stalls in the basement.",
               tags: ["anime", "shopping", "local"],
               wiki: "Nakano_Broadway",
+              coords: [35.7084, 139.6654],
             },
             {
               name: "Koenji",
@@ -107,6 +117,7 @@ const TRIP_DATA = {
                 "Tokyo's punk-rock / bohemian quarter. Japan's best vintage and thrift shopping, indie live music venues, amazing izakaya alleys.",
               tags: ["vintage", "nightlife", "local"],
               wiki: "Kōenji",
+              coords: [35.7056, 139.6497],
             },
             {
               name: "Kichijoji / Inokashira Park",
@@ -115,6 +126,7 @@ const TRIP_DATA = {
                 "Beloved neighborhood centered around Inokashira Park with its pond, swan boats, and forested paths. Harmonica Yokocho alley has tiny food stalls. Near the Ghibli Museum (book months ahead).",
               tags: ["park", "ghibli", "local"],
               wiki: "Kichijōji",
+              coords: [35.7002, 139.5795],
             },
           ],
         },
@@ -128,6 +140,7 @@ const TRIP_DATA = {
                 "Maybe Tokyo's coolest neighborhood. Indie theaters, vintage clothing, tiny live music bars, specialty coffee shops. Bohemian and walkable.",
               tags: ["vintage", "nightlife", "local"],
               wiki: "Shimokitazawa",
+              coords: [35.6614, 139.6680],
             },
             {
               name: "Daikanyama",
@@ -136,6 +149,7 @@ const TRIP_DATA = {
                 "Upscale but chill. Famous for the stunning T-Site Tsutaya bookstore. Boutiques, cafes, and a very 'grown-up Tokyo' feel.",
               tags: ["cafe", "shopping", "upscale"],
               wiki: "Daikanyama",
+              coords: [35.6497, 139.7030],
             },
             {
               name: "Jiyugaoka",
@@ -144,6 +158,7 @@ const TRIP_DATA = {
                 "European village feel with cobblestone-style streets, patisseries, and dessert shops. Good for an afternoon stroll and sweets.",
               tags: ["dessert", "cafe", "charming"],
               wiki: "Jiyūgaoka",
+              coords: [35.6076, 139.6682],
             },
           ],
         },
@@ -157,6 +172,7 @@ const TRIP_DATA = {
                 "Multiple trails up a forested mountain. Trail 6 has stream crossings and forest canopy. Summit views of Mt. Fuji on clear days. Easy half-day — pairs with Kichijoji on the way back.",
               tags: ["hike", "nature", "fuji-view"],
               wiki: "Mount_Takao",
+              coords: [35.6254, 139.2437],
             },
             {
               name: "TeamLab Planets",
@@ -164,6 +180,7 @@ const TRIP_DATA = {
                 "Immersive barefoot walk-through art installation themed around water and forests. Book in advance. Best in the evening.",
               tags: ["art", "immersive", "indoor"],
               wiki: "TeamLab",
+              coords: [35.6493, 139.7901],
             },
           ],
         },
@@ -177,6 +194,7 @@ const TRIP_DATA = {
                 "Lakeside biking with Mt. Fuji views, Kachi Kachi Ropeway, camping overnight. Your camping night 1.",
               tags: ["nature", "camping", "fuji-view"],
               wiki: "Lake_Kawaguchi",
+              coords: [35.5142, 138.7530],
             },
             {
               name: "Kamakura & Enoshima",
@@ -185,6 +203,7 @@ const TRIP_DATA = {
                 "Coastal town with a giant bronze Buddha, forested hillside temple trails, and Enoshima island with ocean panoramas and seafood.",
               tags: ["historic", "beach", "day-trip"],
               wiki: "Kamakura",
+              coords: [35.3193, 139.5466],
             },
             {
               name: "Kawagoe",
@@ -193,6 +212,7 @@ const TRIP_DATA = {
                 "'Little Edo' — preserved Edo-period merchant architecture, a famous bell tower, and a candy lane. Easy half-day trip, great for photos.",
               tags: ["historic", "day-trip"],
               wiki: "Kawagoe,_Saitama",
+              coords: [35.9251, 139.4858],
             },
             {
               name: "Hakone",
@@ -201,6 +221,7 @@ const TRIP_DATA = {
                 "Hot springs, Lake Ashi cruise, cable cars, Fuji views. Overlaps with Kawaguchi plans — probably save for a future trip.",
               tags: ["onsen", "day-trip", "fuji-view"],
               wiki: "Hakone,_Kanagawa",
+              coords: [35.2321, 139.1069],
             },
           ],
         },
@@ -218,6 +239,7 @@ const TRIP_DATA = {
                 "Thousands of vermillion torii gates winding up a forested mountainside. The summit hike takes ~2 hours and most tourists skip it — do the whole thing.",
               tags: ["shrine", "hike", "iconic"],
               wiki: "Fushimi_Inari-taisha",
+              coords: [34.9671, 135.7727],
             },
             {
               name: "Kinkaku-ji / Golden Pavilion",
@@ -225,6 +247,7 @@ const TRIP_DATA = {
                 "Gold-leafed temple reflected in a mirror pond. Iconic photo spot, ¥500 entry. Serene gardens.",
               tags: ["temple", "iconic"],
               wiki: "Kinkaku-ji",
+              coords: [35.0394, 135.7292],
             },
             {
               name: "Gion District",
@@ -232,6 +255,7 @@ const TRIP_DATA = {
                 "The old geisha quarter with traditional wooden machiya houses, lantern-lit alleys, and tea houses. Best in the evening.",
               tags: ["historic", "cultural", "nightlife"],
               wiki: "Gion",
+              coords: [35.0036, 135.7778],
             },
             {
               name: "Philosopher's Path",
@@ -239,6 +263,7 @@ const TRIP_DATA = {
                 "Peaceful 2km canal-side walking path lined with trees, connecting several temples. Quiet and meditative.",
               tags: ["walking", "scenic", "chill"],
               wiki: "Philosopher's_Walk",
+              coords: [35.0269, 135.7945],
             },
             {
               name: "Tadasu no Mori",
@@ -246,6 +271,7 @@ const TRIP_DATA = {
                 "Inside Shimogamo Shrine near the Kamo River. 20-min walk from Demachiyanagi Station. Pairs with Kinkaku-ji or the Philosopher's Path.",
               tags: ["shrine", "nature"],
               wiki: "Shimogamo_Shrine",
+              coords: [35.0392, 135.7726],
             },
             {
               name: "Samurai Kembu Kyoto",
@@ -253,6 +279,7 @@ const TRIP_DATA = {
                 "Near Gion — sword and fan performance classes. More traditional / atmospheric setting than the Tokyo samurai spots.",
               tags: ["cultural", "activity"],
               wiki: "Samurai",
+              coords: [35.0054, 135.7738],
             },
           ],
         },
@@ -265,6 +292,7 @@ const TRIP_DATA = {
                 "Towering bamboo canopy creating a cathedral-like corridor. Rent bikes to explore the wider area: the river, Togetsukyo Bridge, and the monkey park.",
               tags: ["nature", "iconic"],
               wiki: "Arashiyama",
+              coords: [35.0170, 135.6714],
             },
           ],
         },
@@ -278,6 +306,7 @@ const TRIP_DATA = {
                 "Over 1,000 wild deer that bow for crackers. Todai-ji houses a massive bronze Buddha in the world's largest wooden building.",
               tags: ["deer", "historic", "day-trip"],
               wiki: "Nara_Park",
+              coords: [34.6851, 135.8430],
             },
             {
               name: "Kasugayama Primeval Forest",
@@ -285,6 +314,7 @@ const TRIP_DATA = {
                 "UNESCO ancient forest untouched since AD 841 — behind Kasuga Shrine in Nara. Mossy stone paths, stone Buddha caves, waterfalls. ~3.5 hours moderate hike. Pairs perfectly with Nara.",
               tags: ["hike", "nature", "unesco"],
               wiki: "Kasugayama_Primeval_Forest",
+              coords: [34.6828, 135.8614],
             },
           ],
         },
@@ -298,6 +328,7 @@ const TRIP_DATA = {
                 "30,000 sqm riverside campground along the Kizu River. No reservation needed, ~¥1,000/person. Stargazing, hiking, rock climbing. BYO gear.",
               tags: ["camping", "budget"],
               wiki: "Kasagi,_Kyoto",
+              coords: [34.7803, 135.9456],
             },
             {
               name: "Spring Hiyoshi Camp Field",
@@ -305,6 +336,7 @@ const TRIP_DATA = {
                 "Near Hiyoshi Dam. Hot springs, canoeing, SUP on the dam lake. Tent rental available, English-speaking staff. 25-min walk from JR Hiyoshi Station.",
               tags: ["camping", "onsen", "water"],
               wiki: "",
+              coords: [35.1708, 135.5731],
             },
             {
               name: "GRAX Rurikei",
@@ -313,6 +345,7 @@ const TRIP_DATA = {
                 "Luxury glamping resort with onsen. Everything provided — tents, food, cooking gear. Most expensive but zero effort.",
               tags: ["glamping", "onsen", "upscale"],
               wiki: "",
+              coords: [35.1825, 135.4814],
             },
           ],
         },
@@ -330,6 +363,7 @@ const TRIP_DATA = {
                 "Osaka's neon-lit food street along a canal. Heart of Japan's street food scene: takoyaki, okonomiyaki, kushikatsu. Loud, bright, and best at night.",
               tags: ["food", "nightlife", "iconic"],
               wiki: "Dōtonbori",
+              coords: [34.6687, 135.5013],
             },
             {
               name: "Osaka Castle",
@@ -337,6 +371,7 @@ const TRIP_DATA = {
                 "Iconic castle surrounded by a huge park. Museum inside with city views from the top floor. Great grounds for a stroll.",
               tags: ["historic", "castle"],
               wiki: "Osaka_Castle",
+              coords: [34.6873, 135.5259],
             },
             {
               name: "Shinsekai",
@@ -344,6 +379,7 @@ const TRIP_DATA = {
                 "Retro neighborhood with a gritty, old-school charm. Famous for kushikatsu and the Tsutenkaku Tower. More local and less polished than Dotonbori.",
               tags: ["food", "retro", "local"],
               wiki: "Shinsekai",
+              coords: [34.6520, 135.5063],
             },
           ],
         },
@@ -357,6 +393,7 @@ const TRIP_DATA = {
                 "Easy 2.7km paved trail through a forested gorge to a beautiful 33m waterfall. Try the maple leaf tempura along the path. Perfect half-day nature escape.",
               tags: ["hike", "waterfall", "nature"],
               wiki: "Mino,_Osaka",
+              coords: [34.8554, 135.4716],
             },
             {
               name: "Universal Studios Japan",
@@ -364,6 +401,7 @@ const TRIP_DATA = {
                 "West Osaka. The alternative to a nature day if anyone wants Super Nintendo World.",
               tags: ["theme-park"],
               wiki: "Universal_Studios_Japan",
+              coords: [34.6654, 135.4323],
             },
           ],
         },
@@ -381,6 +419,7 @@ const TRIP_DATA = {
                 "From Osaka via Hiroshima. The floating torii gate of Itsukushima Shrine, wild deer, and a forested hike up Mt. Misen with Inland Sea views. Long but rewarding day trip.",
               tags: ["shrine", "hike", "day-trip"],
               wiki: "Itsukushima",
+              coords: [34.2958, 132.3197],
             },
             {
               name: "Kamikochi",
@@ -388,6 +427,7 @@ const TRIP_DATA = {
                 "Japanese Alps river valley at 1,500m surrounded by 3,000m peaks. Perfect June weather. Serious nature immersion.",
               tags: ["nature", "hike", "alps"],
               wiki: "Kamikōchi",
+              coords: [36.2477, 137.6368],
             },
           ],
         },
