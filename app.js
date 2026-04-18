@@ -87,7 +87,8 @@ function el(tag, className, html) {
 }
 
 function renderPlace(place) {
-  const card = el("article", "card");
+  const card = el("a", "card");
+  card.href = "place.html?slug=" + encodeURIComponent(slugify(place.name));
   const imgWrap = el("div", "card-img");
   card.appendChild(imgWrap);
 
@@ -102,20 +103,8 @@ function renderPlace(place) {
     body.appendChild(tags);
   }
 
-  if (place.links?.length) {
-    const links = el("ul", "links");
-    for (const l of place.links) {
-      const li = document.createElement("li");
-      const a = document.createElement("a");
-      a.href = l.url;
-      a.target = "_blank";
-      a.rel = "noopener";
-      a.textContent = l.label;
-      li.appendChild(a);
-      links.appendChild(li);
-    }
-    body.appendChild(links);
-  }
+  const more = el("span", "card-more", "View details →");
+  body.appendChild(more);
 
   card.appendChild(body);
 
@@ -200,13 +189,15 @@ function makeMarker(place) {
         `<li><a href="${l.url}" target="_blank" rel="noopener">${l.label}</a></li>`
     )
     .join("");
+  const slug = slugify(place.name);
   marker.bindPopup(`
     <div class="popup">
       <div class="popup-city" style="color:${color}">${place.city} · ${place.group}</div>
-      <h4>${place.name}</h4>
+      <h4><a href="place.html?slug=${encodeURIComponent(slug)}">${place.name}</a></h4>
       <p>${place.summary}</p>
       <div class="tags">${tags}</div>
       ${links ? `<ul class="links">${links}</ul>` : ""}
+      <a class="popup-more" href="place.html?slug=${encodeURIComponent(slug)}">View details →</a>
     </div>
   `);
   return marker;
