@@ -239,22 +239,32 @@ let staysLayer;
 let currentBounds;
 let allPlacesList = [];
 let currentFilter = "all";
-let hotelsByCity = {};
+let hotelData = { legs: [] };
 let showStays = false;
 
 async function loadHotels() {
   try {
     const res = await fetch("hotels.json");
     if (!res.ok) return;
-    const data = await res.json();
-    hotelsByCity = data.cities || {};
+    hotelData = await res.json();
   } catch {
-    hotelsByCity = {};
+    hotelData = { legs: [] };
   }
 }
 
-function makeHotelMarker(hotel, city) {
-  const color = CITY_COLORS[city] || "#444";
+function hotelPriceLine(hotel, nights) {
+  const pn = hotel.priceNightY
+    ? `¥${hotel.priceNightY.toLocaleString()} / $${hotel.priceNightUsd}`
+    : "—";
+  const pt =
+    hotel.priceTotalY && nights > 1
+      ? `${nights}n total ≈ ¥${hotel.priceTotalY.toLocaleString()} / $${hotel.priceTotalUsd}`
+      : "";
+  return { perNight: pn, total: pt };
+}
+
+function makeHotelMarker(hotel, leg) {
+  const color = CITY_COLORS[leg.city] || "#444";
   const icon = L.divIcon({
     className: "pin",
     html: `<div class="hotel-pin" style="--c:${color}"><span>${hotel.score}</span></div>`,
@@ -262,19 +272,20 @@ function makeHotelMarker(hotel, city) {
     iconAnchor: [15, 15],
   });
   const m = L.marker([hotel.lat, hotel.lng], { icon, title: hotel.name });
-  const price = hotel.priceY ? `¥${hotel.priceY.toLocaleString()}+` : "—";
+  const price = hotelPriceLine(hotel, leg.nights);
   const rating = hotel.rating
     ? `⭐ ${hotel.rating} <span class="hotel-reviews">(${hotel.reviews})</span>`
     : "";
   m.bindPopup(`
     <div class="popup hotel-popup">
       ${hotel.image ? `<img src="${hotel.image}" alt="" class="hotel-thumb" loading="lazy" />` : ""}
-      <div class="popup-city" style="color:${color}">${city} · score ${hotel.score}/100</div>
+      <div class="popup-city" style="color:${color}">${leg.label} · score ${hotel.score}/100</div>
       <h4>${hotel.name}</h4>
       <div class="hotel-meta">
         ${rating ? `<span>${rating}</span>` : ""}
-        <span class="hotel-price">${price}/night</span>
+        <span class="hotel-price">${price.perNight}/night</span>
       </div>
+      ${price.total ? `<p class="hotel-dist">${price.total}</p>` : ""}
       <p class="hotel-dist">${hotel.distanceKm} km to ${hotel.nearest}</p>
       <a class="popup-more" href="${hotel.url}" target="_blank" rel="noopener">Book on Rakuten →</a>
     </div>
@@ -289,14 +300,125 @@ function renderStays() {
     if (map.hasLayer(staysLayer)) map.removeLayer(staysLayer);
     return;
   }
-  const cities =
-    currentFilter === "all" ? Object.keys(hotelsByCity) : [currentFilter];
-  for (const c of cities) {
-    for (const h of hotelsByCity[c] || []) {
-      staysLayer.addLayer(makeHotelMarker(h, c));
+  const legs =
+    currentFilter === "all"
+      ? hotelData.legs
+      : hotelData.legs.filter((l) => l.city === currentFilter);
+  for (const leg of legs) {
+    for (const h of leg.hotels || []) {
+      staysLayer.addLayer(makeHotelMarker(h, leg));
     }
   }
   if (!map.hasLayer(staysLayer)) staysLayer.addTo(map);
+}
+
+function formatDateRange(checkin, checkout) {
+  const fmt = (d) =>
+    new Date(d + "T00:00").toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+  return `${fmt(checkin)} → ${fmt(checkout)}`;
+}
+
+function renderStayCard(hotel, leg) {
+  const color = CITY_COLORS[leg.city] || "#444";
+  const card = el("a", "stay-card");
+  card.href = hotel.url;
+  card.target = "_blank";
+  card.rel = "noopener";
+
+  const imgWrap = el("div", "stay-img");
+  if (hotel.image) {
+    const img = document.createElement("img");
+    img.src = hotel.image;
+    img.alt = hotel.name;
+    img.loading = "lazy";
+    imgWrap.appendChild(img);
+  } else {
+    imgWrap.classList.add("no-img");
+  }
+  const badge = el("span", "stay-score", hotel.score);
+  badge.style.setProperty("--c", color);
+  imgWrap.appendChild(badge);
+  card.appendChild(imgWrap);
+
+  const body = el("div", "stay-body");
+  body.appendChild(el("h3", "stay-name", hotel.name));
+
+  const meta = el("div", "stay-meta");
+  if (hotel.rating) {
+    meta.appendChild(
+      el(
+        "span",
+        "stay-rating",
+        `⭐ ${hotel.rating} <span class="muted">(${hotel.reviews})</span>`
+      )
+    );
+  }
+  meta.appendChild(
+    el(
+      "span",
+      "stay-distance",
+      `📍 ${hotel.distanceKm} km → ${hotel.nearest}`
+    )
+  );
+  body.appendChild(meta);
+
+  const price = hotelPriceLine(hotel, leg.nights);
+  const priceEl = el("div", "stay-price");
+  priceEl.innerHTML = `
+    <span class="stay-price-night">${price.perNight}</span><span class="muted"> /night</span>
+    ${price.total ? `<span class="stay-price-total">${price.total}</span>` : ""}
+  `;
+  body.appendChild(priceEl);
+
+  const cta = el("span", "stay-cta", "Book on Rakuten →");
+  body.appendChild(cta);
+
+  card.appendChild(body);
+  return card;
+}
+
+function renderStaysView() {
+  const root = document.getElementById("stays-view");
+  root.innerHTML = "";
+  if (!hotelData.legs.length) {
+    root.appendChild(
+      el(
+        "p",
+        "stays-empty",
+        "No stays data yet. Run scripts/fetch_hotels.js."
+      )
+    );
+    return;
+  }
+
+  const hero = el("section", "stays-hero");
+  hero.innerHTML = `
+    <h1 class="stays-title">Stays</h1>
+    <p class="stays-sub">
+      ${hotelData.guests?.adults || 4} guests · ${hotelData.guests?.rooms || 2} rooms ·
+      scored on price, closeness to your places, and rating.
+      <span class="muted">USD ≈ ¥${hotelData.usdRate || 150}</span>
+    </p>
+  `;
+  root.appendChild(hero);
+
+  for (const leg of hotelData.legs) {
+    const section = el("section", "stays-leg");
+    const color = CITY_COLORS[leg.city] || "#444";
+    const head = el("header", "stays-leg-head");
+    head.innerHTML = `
+      <h2 class="stays-leg-title" style="border-color:${color}">${leg.label}</h2>
+      <p class="stays-leg-sub">${formatDateRange(leg.checkin, leg.checkout)} · ${leg.nights} night${leg.nights > 1 ? "s" : ""}</p>
+    `;
+    section.appendChild(head);
+    const grid = el("div", "stays-grid");
+    for (const h of leg.hotels) grid.appendChild(renderStayCard(h, leg));
+    section.appendChild(grid);
+    root.appendChild(section);
+  }
 }
 
 function renderMarkers(places) {
@@ -410,6 +532,7 @@ Promise.all([getTripData(), loadHotels()]).then(([data]) => {
   allPlacesList = allPlaces(data);
   renderFilterBar(data.sections.map((s) => s.name));
   initMap();
+  renderStaysView();
 
   for (const btn of document.querySelectorAll(".tab")) {
     btn.addEventListener("click", () => setView(btn.dataset.view));

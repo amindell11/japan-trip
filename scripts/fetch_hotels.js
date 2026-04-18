@@ -1,4 +1,4 @@
-// Rakuten Travel hotel fetcher.
+// Rakuten Travel hotel fetcher (VacantHotelSearch — real dates, availability).
 // Usage:
 //   RAKUTEN_APP_ID=... RAKUTEN_ACCESS_KEY=... node scripts/fetch_hotels.js
 // Writes hotels.json at repo root.
@@ -9,58 +9,88 @@ const path = require("path");
 const APP_ID = process.env.RAKUTEN_APP_ID;
 const ACCESS_KEY = process.env.RAKUTEN_ACCESS_KEY;
 const ORIGIN = process.env.RAKUTEN_ORIGIN || "https://amindell11.github.io";
+const USD_RATE = Number(process.env.USD_RATE || 150); // JPY per USD
 
 if (!APP_ID || !ACCESS_KEY) {
   console.error("Missing RAKUTEN_APP_ID or RAKUTEN_ACCESS_KEY env vars.");
   process.exit(1);
 }
 
-const ENDPOINT = "https://openapi.rakuten.co.jp/engine/api/Travel/SimpleHotelSearch/20170426";
+const ENDPOINT =
+  "https://openapi.rakuten.co.jp/engine/api/Travel/VacantHotelSearch/20170426";
 
-// Search centers covering each city. Radius is 3km (API max). Use multiple
-// centers per city to cover the user's place spread.
-const SEARCH_CENTERS = {
-  Tokyo: [
-    { name: "Shinjuku",  lat: 35.6938, lng: 139.7036 },
-    { name: "Shibuya",   lat: 35.6595, lng: 139.7004 },
-    { name: "Asakusa",   lat: 35.7148, lng: 139.7967 },
-    { name: "Tokyo Sta", lat: 35.6812, lng: 139.7671 },
-  ],
-  Kyoto: [
-    { name: "Kyoto Sta", lat: 34.9858, lng: 135.7588 },
-    { name: "Gion",      lat: 35.0036, lng: 135.7778 },
-  ],
-  Osaka: [
-    { name: "Namba",     lat: 34.6687, lng: 135.5013 },
-    { name: "Umeda",     lat: 34.7025, lng: 135.4959 },
-  ],
-};
+const GUESTS = { adults: 4, rooms: 2 };
 
-// User places by city, for distance scoring. Kept in sync with data.js.
-const USER_PLACES_BY_CITY = loadUserPlaces();
+// One entry per hotel booking in the itinerary.
+const STAYS = [
+  {
+    id: "tokyo-arrival",
+    label: "Tokyo — Arrival",
+    city: "Tokyo",
+    checkin: "2026-06-04",
+    checkout: "2026-06-07",
+    centers: [
+      { name: "Shinjuku", lat: 35.6938, lng: 139.7036 },
+      { name: "Shibuya", lat: 35.6595, lng: 139.7004 },
+      { name: "Asakusa", lat: 35.7148, lng: 139.7967 },
+      { name: "Tokyo Sta", lat: 35.6812, lng: 139.7671 },
+    ],
+  },
+  {
+    id: "kyoto",
+    label: "Kyoto",
+    city: "Kyoto",
+    checkin: "2026-06-08",
+    checkout: "2026-06-10",
+    centers: [
+      { name: "Kyoto Sta", lat: 34.9858, lng: 135.7588 },
+      { name: "Gion", lat: 35.0036, lng: 135.7778 },
+    ],
+  },
+  {
+    id: "osaka",
+    label: "Osaka",
+    city: "Osaka",
+    checkin: "2026-06-12",
+    checkout: "2026-06-14",
+    centers: [
+      { name: "Namba", lat: 34.6687, lng: 135.5013 },
+      { name: "Umeda", lat: 34.7025, lng: 135.4959 },
+    ],
+  },
+  {
+    id: "tokyo-return",
+    label: "Tokyo — Last Night",
+    city: "Tokyo",
+    checkin: "2026-06-14",
+    checkout: "2026-06-15",
+    centers: [
+      { name: "Shinjuku", lat: 35.6938, lng: 139.7036 },
+      { name: "Shibuya", lat: 35.6595, lng: 139.7004 },
+      { name: "Tokyo Sta", lat: 35.6812, lng: 139.7671 },
+    ],
+  },
+];
 
 function loadUserPlaces() {
-  // data.js is a browser file; load it by exec'ing in a sandbox to grab TRIP_DATA.
   const dataPath = path.join(__dirname, "..", "data.js");
   const src = fs.readFileSync(dataPath, "utf8");
   const fn = new Function(src + "\nreturn TRIP_DATA;");
   const data = fn();
   const byCity = {};
   for (const section of data.sections) {
-    const city = section.name;
-    if (!SEARCH_CENTERS[city]) continue;
     const places = [];
     for (const group of section.groups) {
       for (const p of group.places) {
-        if (p.coords && Array.isArray(p.coords)) {
-          places.push({ name: p.name, lat: p.coords[0], lng: p.coords[1] });
-        }
+        if (p.coords) places.push({ name: p.name, lat: p.coords[0], lng: p.coords[1] });
       }
     }
-    byCity[city] = places;
+    byCity[section.name] = places;
   }
   return byCity;
 }
+
+const USER_PLACES = loadUserPlaces();
 
 function haversineKm(a, b) {
   const toRad = (d) => (d * Math.PI) / 180;
@@ -86,9 +116,7 @@ function nearestPlaceKm(point, places) {
   return { km: best, name: bestName };
 }
 
-async function sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms));
-}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function fetchOnce(params) {
   const url = new URL(ENDPOINT);
@@ -107,6 +135,8 @@ async function fetchOnce(params) {
       await sleep(1500 * attempt);
       continue;
     }
+    // VacantHotelSearch returns 404 when zero hotels match — treat as empty.
+    if (res.status === 404) return { hotels: [], pagingInfo: { pageCount: 0, page: 1 } };
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}: ${text.slice(0, 300)}`);
     }
@@ -114,8 +144,8 @@ async function fetchOnce(params) {
   }
 }
 
-async function searchCenter(city, center) {
-  console.log(`  [${city}] ${center.name} (${center.lat},${center.lng})`);
+async function searchCenter(stay, center) {
+  console.log(`  [${stay.id}] ${center.name}`);
   const results = [];
   let page = 1;
   while (true) {
@@ -123,6 +153,10 @@ async function searchCenter(city, center) {
       latitude: center.lat,
       longitude: center.lng,
       searchRadius: 3,
+      checkinDate: stay.checkin,
+      checkoutDate: stay.checkout,
+      adultNum: GUESTS.adults,
+      roomNum: GUESTS.rooms,
       hits: 30,
       page,
     });
@@ -146,9 +180,11 @@ function bayesianRating(avg, count, prior = 3.5, priorWeight = 15) {
 
 function normalize01(v, min, max) {
   if (max <= min) return 0.5;
-  const x = (v - min) / (max - min);
-  return Math.max(0, Math.min(1, x));
+  return Math.max(0, Math.min(1, (v - min) / (max - min)));
 }
+
+// Weights: prioritize price + closeness, rating matters less.
+const W = { price: 0.4, distance: 0.35, rating: 0.25 };
 
 function scoreHotels(hotels, userPlaces) {
   const enriched = hotels.map((h) => {
@@ -177,62 +213,90 @@ function scoreHotels(hotels, userPlaces) {
     const bayes = bayesianRating(e.rating, e.reviews);
     const ratingScore = ((bayes - 1) / 4) * 100;
     const priceScore =
-      e.priceY == null ? 50 : (1 - normalize01(e.priceY, pMin, pMax)) * 100;
+      e.priceY == null ? 40 : (1 - normalize01(e.priceY, pMin, pMax)) * 100;
     const distanceScore = (1 - normalize01(e.distanceKm, dMin, dMax)) * 100;
-    const score = 0.45 * ratingScore + 0.25 * priceScore + 0.3 * distanceScore;
+    const score =
+      W.price * priceScore + W.distance * distanceScore + W.rating * ratingScore;
     return { ...e, score: Math.round(score) };
   });
 }
 
 function dedupe(hotels) {
   const seen = new Map();
-  for (const h of hotels) {
-    const existing = seen.get(h.hotelNo);
-    if (!existing) seen.set(h.hotelNo, h);
-  }
+  for (const h of hotels) if (!seen.has(h.hotelNo)) seen.set(h.hotelNo, h);
   return [...seen.values()];
 }
 
-async function main() {
-  const output = { generatedAt: new Date().toISOString(), cities: {} };
+function nightsBetween(a, b) {
+  const ms = new Date(b) - new Date(a);
+  return Math.round(ms / 86400000);
+}
 
-  for (const [city, centers] of Object.entries(SEARCH_CENTERS)) {
-    console.log(`\n=== ${city} ===`);
+async function main() {
+  const output = {
+    generatedAt: new Date().toISOString(),
+    usdRate: USD_RATE,
+    guests: GUESTS,
+    legs: [],
+  };
+
+  for (const stay of STAYS) {
+    console.log(`\n=== ${stay.label} (${stay.checkin} → ${stay.checkout}) ===`);
     let all = [];
-    for (const c of centers) {
-      const batch = await searchCenter(city, c);
+    for (const c of stay.centers) {
+      const batch = await searchCenter(stay, c);
       all = all.concat(batch);
       await sleep(1200);
     }
     const unique = dedupe(all);
-    console.log(`  ${all.length} total, ${unique.length} unique`);
-    const userPlaces = USER_PLACES_BY_CITY[city] || [];
-    const scored = scoreHotels(unique, userPlaces);
+    console.log(`  ${all.length} total, ${unique.length} unique available`);
+    const places = USER_PLACES[stay.city] || [];
+    const scored = scoreHotels(unique, places);
     scored.sort((a, b) => b.score - a.score);
-    const top = scored.slice(0, 40).map((e) => ({
-      hotelNo: e.hotel.hotelNo,
-      name: e.hotel.hotelName,
-      score: e.score,
-      priceY: e.priceY,
-      rating: e.rating,
-      reviews: e.reviews,
-      distanceKm: Math.round(e.distanceKm * 100) / 100,
-      nearest: e.nearestPlace,
-      lat: e.hotel.latitude,
-      lng: e.hotel.longitude,
-      access: e.hotel.access,
-      address: `${e.hotel.address1 || ""}${e.hotel.address2 || ""}`,
-      image: e.hotel.hotelThumbnailUrl,
-      url: e.hotel.hotelInformationUrl,
-    }));
-    output.cities[city] = top;
+    const nights = nightsBetween(stay.checkin, stay.checkout);
+    const top = scored.slice(0, 6).map((e) => {
+      const priceNightY = e.priceY || 0;
+      const priceTotalY = priceNightY * nights;
+      return {
+        hotelNo: e.hotel.hotelNo,
+        name: e.hotel.hotelName,
+        score: e.score,
+        priceNightY,
+        priceNightUsd: Math.round(priceNightY / USD_RATE),
+        priceTotalY,
+        priceTotalUsd: Math.round(priceTotalY / USD_RATE),
+        rating: e.rating,
+        reviews: e.reviews,
+        distanceKm: Math.round(e.distanceKm * 100) / 100,
+        nearest: e.nearestPlace,
+        lat: e.hotel.latitude,
+        lng: e.hotel.longitude,
+        access: e.hotel.access,
+        address: `${e.hotel.address1 || ""}${e.hotel.address2 || ""}`,
+        image: e.hotel.hotelThumbnailUrl,
+        url: e.hotel.hotelInformationUrl,
+      };
+    });
+
+    output.legs.push({
+      id: stay.id,
+      label: stay.label,
+      city: stay.city,
+      checkin: stay.checkin,
+      checkout: stay.checkout,
+      nights,
+      hotels: top,
+    });
   }
 
   const outPath = path.join(__dirname, "..", "hotels.json");
   fs.writeFileSync(outPath, JSON.stringify(output, null, 2));
   console.log(`\nWrote ${outPath}`);
-  for (const [city, hotels] of Object.entries(output.cities)) {
-    console.log(`  ${city}: ${hotels.length} hotels, top score ${hotels[0]?.score}`);
+  for (const leg of output.legs) {
+    const top = leg.hotels[0];
+    console.log(
+      `  ${leg.label}: ${leg.hotels.length} hotels, top=${top?.name} (${top?.score}, ¥${top?.priceNightY}/$${top?.priceNightUsd} per night)`
+    );
   }
 }
 
