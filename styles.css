@@ -1010,3 +1010,56 @@ body[data-view="detail"] main { max-width: 960px; }
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Stays sub-tabs */
+.stays-subtabs {
+  display: inline-flex;
+  background: #eee;
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+  margin: 0 0 1.5rem;
+}
+
+.stays-subtab {
+  border: 0;
+  background: transparent;
+  padding: 0.4rem 1.1rem;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.stays-subtab.active {
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.stays-subtab:hover:not(.active) { color: var(--fg); }
+
+.council-header {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1rem;
+}
+
+.council-open {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px dashed currentColor;
+  margin-left: 0.4rem;
+}
+.council-open:hover { border-bottom-style: solid; }
+
+.council-iframe {
+  width: 100%;
+  height: calc(100vh - 200px);
+  min-height: 700px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #f7f5f0;
+}

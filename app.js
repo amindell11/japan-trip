@@ -392,11 +392,12 @@ function renderStayCard(hotel, leg) {
   return card;
 }
 
-function renderStaysView() {
-  const root = document.getElementById("stays-view");
-  root.innerHTML = "";
+const COUNCIL_REPORT_PATH = "council/council-report-20260417-234658.html";
+
+function renderHotelsPanel(panel) {
+  panel.innerHTML = "";
   if (!hotelData.legs.length) {
-    root.appendChild(
+    panel.appendChild(
       el(
         "p",
         "stays-empty",
@@ -415,7 +416,7 @@ function renderStaysView() {
       <span class="muted">USD ≈ ¥${hotelData.usdRate || 150}</span>
     </p>
   `;
-  root.appendChild(hero);
+  panel.appendChild(hero);
 
   for (const leg of hotelData.legs) {
     const section = el("section", "stays-leg");
@@ -429,8 +430,62 @@ function renderStaysView() {
     const grid = el("div", "stays-grid");
     for (const h of leg.hotels) grid.appendChild(renderStayCard(h, leg));
     section.appendChild(grid);
-    root.appendChild(section);
+    panel.appendChild(section);
   }
+}
+
+function renderCouncilPanel(panel) {
+  panel.innerHTML = "";
+  const header = el("div", "council-header");
+  header.innerHTML = `
+    <h1 class="stays-title">Council Report</h1>
+    <p class="stays-sub">5 AI advisors debate the hotel picks. <a href="${COUNCIL_REPORT_PATH}" target="_blank" rel="noopener" class="council-open">Open in new tab ↗</a></p>
+  `;
+  panel.appendChild(header);
+
+  const frame = document.createElement("iframe");
+  frame.src = COUNCIL_REPORT_PATH;
+  frame.className = "council-iframe";
+  frame.title = "LLM Council Report";
+  panel.appendChild(frame);
+}
+
+function renderStaysView() {
+  const root = document.getElementById("stays-view");
+  root.innerHTML = "";
+
+  const subtabs = el("div", "stays-subtabs");
+  const hotelsBtn = el("button", "stays-subtab active", "Hotels");
+  const councilBtn = el("button", "stays-subtab", "Council Report");
+  subtabs.appendChild(hotelsBtn);
+  subtabs.appendChild(councilBtn);
+  root.appendChild(subtabs);
+
+  const hotelsPanel = el("div", "stays-panel");
+  renderHotelsPanel(hotelsPanel);
+  root.appendChild(hotelsPanel);
+
+  const councilPanel = el("div", "stays-panel");
+  councilPanel.style.display = "none";
+  root.appendChild(councilPanel);
+
+  let councilLoaded = false;
+  hotelsBtn.addEventListener("click", () => {
+    hotelsBtn.classList.add("active");
+    councilBtn.classList.remove("active");
+    hotelsPanel.style.display = "";
+    councilPanel.style.display = "none";
+  });
+  councilBtn.addEventListener("click", () => {
+    councilBtn.classList.add("active");
+    hotelsBtn.classList.remove("active");
+    hotelsPanel.style.display = "none";
+    councilPanel.style.display = "";
+    if (!councilLoaded) {
+      renderCouncilPanel(councilPanel);
+      councilLoaded = true;
+    }
+  });
 }
 
 function renderMarkers(places) {

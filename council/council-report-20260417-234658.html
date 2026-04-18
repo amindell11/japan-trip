@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Council Report — Japan Trip Hotels</title>
+<style>
+  :root {
+    --bg: #f7f5f0;
+    --surface: #ffffff;
+    --ink: #1a1a1a;
+    --muted: #6b6b6b;
+    --accent: #b8360f;
+    --accent-soft: #fcebe3;
+    --green: #2f7a54;
+    --green-soft: #e5f3ec;
+    --amber: #b8860b;
+    --amber-soft: #fcf3d9;
+    --border: #e0ddd4;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "URW Palladio L", Georgia, serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.65;
+    padding: 2.5rem 1.25rem 4rem;
+  }
+  .container { max-width: 820px; margin: 0 auto; }
+  header.doc-head {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .kicker {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.72rem;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  h1 {
+    font-family: "Didot", "Bodoni 72", Didot, "Playfair Display", serif;
+    font-size: 2.2rem;
+    font-weight: 400;
+    margin: 0.35rem 0 0.4rem;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+  }
+  .meta {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+  h2 {
+    font-family: "Didot", "Bodoni 72", Didot, "Playfair Display", serif;
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin: 2.4rem 0 0.5rem;
+    letter-spacing: -0.005em;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.35rem;
+  }
+  h3 {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    margin: 1.4rem 0 0.4rem;
+  }
+  p { margin: 0.6rem 0; }
+  ul, ol { padding-left: 1.25rem; margin: 0.6rem 0; }
+  li { margin-bottom: 0.35rem; }
+  blockquote {
+    border-left: 3px solid var(--accent);
+    padding-left: 1rem;
+    margin: 1rem 0;
+    color: #333;
+    font-style: italic;
+  }
+  .question-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.1rem 1.25rem;
+    border-radius: 6px;
+    margin: 1rem 0 2rem;
+    font-size: 0.95rem;
+  }
+  .verdict-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    padding: 1.5rem;
+    border-radius: 6px;
+    margin: 1.5rem 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+  .verdict-card h3 { margin-top: 0; }
+  .pill {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    font-family: system-ui, sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .pill-agree { background: var(--green-soft); color: var(--green); }
+  .pill-clash { background: var(--amber-soft); color: var(--amber); }
+  .pill-miss  { background: var(--accent-soft); color: var(--accent); }
+  .alignment-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr;
+    gap: 0.5rem;
+    margin: 1.25rem 0;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 0.82rem;
+    border: 1px solid var(--border);
+    padding: 0.9rem;
+    border-radius: 6px;
+    background: var(--surface);
+  }
+  .alignment-grid .head {
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .alignment-grid .row {
+    font-weight: 500;
+    padding: 0.3rem 0;
+  }
+  .alignment-grid .cell {
+    padding: 0.3rem 0;
+    text-align: center;
+  }
+  .tick { color: var(--green); font-size: 1.05rem; }
+  .cross { color: #c5443a; font-size: 1.05rem; }
+  .dash { color: var(--muted); }
+  .hotel-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 0.9rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .hotel-table th {
+    text-align: left;
+    background: #f0ece4;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+  .hotel-table td {
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .hotel-table tr:last-child td { border-bottom: none; }
+  details.advisor {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.9rem 1.1rem;
+    margin: 0.7rem 0;
+  }
+  details.advisor[open] {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  }
+  details.advisor summary {
+    cursor: pointer;
+    font-family: system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--ink);
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  details.advisor summary::-webkit-details-marker { display: none; }
+  details.advisor summary::after {
+    content: "+";
+    color: var(--muted);
+    font-size: 1.3rem;
+    font-weight: 400;
+  }
+  details.advisor[open] summary::after { content: "−"; }
+  details.advisor .body {
+    margin-top: 0.8rem;
+    font-size: 0.92rem;
+    color: #222;
+  }
+  .advisor-label {
+    display: inline-block;
+    padding: 0.1rem 0.55rem;
+    border-radius: 3px;
+    font-family: "Didot", serif;
+    font-size: 0.85rem;
+    color: var(--accent);
+    margin-right: 0.4rem;
+  }
+  .recommendation {
+    background: #fffdf6;
+    border: 1px solid var(--amber);
+    border-radius: 6px;
+    padding: 1.3rem 1.5rem;
+    margin: 1.25rem 0;
+    box-shadow: 0 2px 5px rgba(184, 134, 11, 0.08);
+  }
+  .recommendation h3 { color: var(--amber); }
+  .first-thing {
+    background: var(--ink);
+    color: #fcfaf2;
+    border-radius: 6px;
+    padding: 1.2rem 1.4rem;
+    margin: 1.5rem 0;
+  }
+  .first-thing h3 {
+    color: #f1d86c;
+    margin-top: 0;
+  }
+  footer.doc-foot {
+    border-top: 1px solid var(--border);
+    margin-top: 3rem;
+    padding-top: 1rem;
+    font-family: system-ui, sans-serif;
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-align: center;
+  }
+  code {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 0.08rem 0.35rem;
+    border-radius: 3px;
+    font-size: 0.85rem;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header class="doc-head">
+  <div class="kicker">LLM Council — Briefing</div>
+  <h1>Which hotels should we actually book?</h1>
+  <div class="meta">Japan trip · June 4–15, 2026 · 4 travelers · 4 bookings across Tokyo, Kyoto, Osaka · April 17 2026</div>
+</header>
+
+<div class="question-box">
+  <strong>The question:</strong> For each of the 4 shortlisted bookings (Tokyo arrival, Kyoto, Osaka, Tokyo return), should we take the top pick from the Rakuten-scored shortlist, or a runner-up — and are any of these neighborhoods wrong for the itinerary as it stands?
+</div>
+
+<h2>The verdict at a glance</h2>
+
+<div class="verdict-card">
+  <h3>The recommendation</h3>
+  <table class="hotel-table">
+    <tr><th>Leg</th><th>Pick</th><th>Price</th></tr>
+    <tr>
+      <td><strong>Tokyo arrival</strong><br><small>Jun 4–7 · 3n</small></td>
+      <td>Sakura Cross Shinjuku East</td>
+      <td>$440 / $110pp</td>
+    </tr>
+    <tr>
+      <td><strong>Kyoto</strong><br><small>Jun 8–10 · 2n</small></td>
+      <td>APA Hotel Kyoto Gion EXCELLENT</td>
+      <td>$283 / $71pp</td>
+    </tr>
+    <tr>
+      <td><strong>Osaka</strong><br><small>Jun 12–14 · 2n</small></td>
+      <td>Eslead Hotel Namba South III</td>
+      <td>$310 / $78pp</td>
+    </tr>
+    <tr>
+      <td><strong>Tokyo return</strong><br><small>Jun 14–15 · 1n</small></td>
+      <td>Super Hotel Akihabara</td>
+      <td>$193 / $48pp</td>
+    </tr>
+    <tr>
+      <td colspan="2"><strong>Total</strong></td>
+      <td><strong>$1,226 / $307pp</strong></td>
+    </tr>
+  </table>
+  <p><strong>Neighborhood corrections:</strong> The scoring algorithm picked <em>Akihabara</em> for Tokyo arrival — that's wrong. Day 3 and Day 4 both depart from Shinjuku (Takao trail + Kawaguchi bus). Staying in Akihabara forces two cross-Tokyo commutes with hiking packs in rainy season. <strong>Shinjuku is the correct base.</strong> Namba (for Osaka) is correct; the scoring gave it by price alone but it's also correct on transit.</p>
+</div>
+
+<h2>How the advisors lined up</h2>
+
+<p>Five advisors answered independently, then reviewed each other's work anonymized.</p>
+
+<div class="alignment-grid">
+  <div class="head">Point</div>
+  <div class="head cell">Contrarian</div>
+  <div class="head cell">First Principles</div>
+  <div class="head cell">Expansionist</div>
+  <div class="head cell">Outsider</div>
+  <div class="head cell">Executor</div>
+
+  <div class="row">Bed-config is a real problem</div>
+  <div class="cell"><span class="tick">✓</span></div>
+  <div class="cell"><span class="tick">✓</span></div>
+  <div class="cell"><span class="cross">✗</span></div>
+  <div class="cell"><span class="tick">✓</span></div>
+  <div class="cell"><span class="tick">✓</span></div>
+
+  <div class="row">Akihabara is wrong for arrival</div>
+  <div class="cell"><span class="tick">✓</span></div>
+  <div class="cell"><span class="tick">✓</span></div>
+  <div class="cell"><span class="tick">✓</span></div>
+  <div class="cell"><span class="tick">✓</span></div>
+  <div class="cell"><span class="tick">✓</span></div>
+
+  <div class="row">Shinjuku is the right base</div>
+  <div class="cell"><span class="dash">—</span></div>
+  <div class="cell"><span class="tick">✓</span></div>
+  <div class="cell"><span class="cross">✗</span></div>
+  <div class="cell"><span class="tick">✓</span></div>
+  <div class="cell"><span class="tick">✓</span></div>
+
+  <div class="row">Aoi Nakamoto (Kyoto guesthouse)</div>
+  <div class="cell"><span class="cross">✗</span></div>
+  <div class="cell"><span class="cross">✗</span></div>
+  <div class="cell"><span class="tick">✓</span></div>
+  <div class="cell"><span class="dash">—</span></div>
+  <div class="cell"><span class="cross">✗</span></div>
+
+  <div class="row">Eslead Namba (Osaka)</div>
+  <div class="cell"><span class="dash">—</span></div>
+  <div class="cell"><span class="tick">✓</span></div>
+  <div class="cell"><span class="tick">✓</span></div>
+  <div class="cell"><span class="tick">✓</span></div>
+  <div class="cell"><span class="tick">✓</span></div>
+
+  <div class="row">Super Hotel Akihabara (return)</div>
+  <div class="cell"><span class="dash">—</span></div>
+  <div class="cell"><span class="tick">✓</span></div>
+  <div class="cell"><span class="tick">✓</span></div>
+  <div class="cell"><span class="dash">—</span></div>
+  <div class="cell"><span class="tick">✓</span></div>
+</div>
+
+<h2>Where the council agrees <span class="pill pill-agree">High confidence</span></h2>
+<ol>
+  <li><strong>Sakura Cross's "1 room, 2 double beds for 4" is a bed-config problem.</strong> Four advisors flagged it independently — two straight male friends sharing a Japanese 140cm double is an unresolved assumption. Only the Expansionist glossed over it.</li>
+  <li><strong>Akihabara is the wrong base for the Tokyo arrival leg.</strong> Day 3 (Takao via Keio Line) and Day 4 (Kawaguchi bus) both depart Shinjuku. All five advisors agreed, by different routes.</li>
+  <li><strong>Eslead Namba South III wins Osaka.</strong> Namba is the correct transit node for Dotonbori, Osaka Castle, and USJ.</li>
+</ol>
+
+<h2>Where the council clashes <span class="pill pill-clash">Real tradeoff</span></h2>
+
+<h3>Tokyo arrival — ryokan vs business hotel</h3>
+<p>The Expansionist pushed Onyado Nono Asakusa Villa ($1,280 trip) — a ryokan 150m from Senso-ji with onsen, for "a core memory." Every other advisor went Sakura Cross Shinjuku ($440). The Expansionist's take is defensible if you're willing to violate the user's stated "price and closeness" priority for a once-in-a-lifetime experience. But it also loads two painful morning commutes from Asakusa to Shinjuku on Days 3–4 in rainy season with gear. <strong>Verdict: budget wins; if splurging, splurge in Kyoto not Tokyo.</strong></p>
+
+<h3>Kyoto — Aoi Nakamoto guesthouse vs APA Gion hotel</h3>
+<p>Only the Expansionist wanted Aoi. The others pointed out: shared bath + futons-on-floor after Takao hike + camping + Fushimi climbing is real physical friction in rainy season, plus a couple sharing a communal bathhouse with strangers is unflagged discomfort. <strong>Verdict: APA Gion, connecting rooms gives the couple privacy and saves the group's legs.</strong></p>
+
+<h2>Blind spots the council caught on peer review <span class="pill pill-miss">Missed initially</span></h2>
+
+<ol>
+  <li><strong>The June 10–12 calendar gap.</strong> Kyoto ends Jun 10, Osaka starts Jun 12 — that's 2 unaccounted nights (presumably Kasagi + Hiyoshi/GRAX camping). No one priced a rain-out fallback during tsuyu season.</li>
+  <li><strong>Luggage logistics across camping nights.</strong> 4 people × 2 camping nights = where do suitcases live? <strong>Takkyubin / takuhaibin</strong> (luggage forwarding, ~¥2,000/bag) from Tokyo → Kyoto and Kyoto → Osaka sidesteps this entirely and makes the neighborhood question matter less.</li>
+  <li><strong>Japanese hotel 4-per-room legality.</strong> Many Japanese hotels legally cap rooms at 2–3 guests. Confirm the specific room config — some hotels add surcharges or require a second room for the 4th person.</li>
+  <li><strong>Day 15 departure airport — Narita or Haneda?</strong> Determines whether Super Hotel Akihabara is actually convenient for the return. If Haneda, pick something on the Yamanote south side near Shinagawa instead.</li>
+  <li><strong>Rakuten availability expires.</strong> The returned prices are live quotes. Lock in the bookings soon — especially APA Gion, reopened March 2026, and likely to fill for summer.</li>
+</ol>
+
+<div class="recommendation">
+  <h3>The full recommendation</h3>
+  <p>Take the Executor's plan (Response B). It's the only response that actually commits, prices, and sequences the bookings. The Contrarian, First Principles Thinker, and Outsider correctly diagnose the bed-config + Akihabara-neighborhood problems; the Executor acts on those diagnoses.</p>
+  <p><strong>One deviation from B:</strong> confirm Day 15 departure airport before locking Super Hotel Akihabara. If Haneda, switch to a Shinagawa-area hotel (not in the current shortlist — rerun the fetch script with Shinagawa center).</p>
+  <p><strong>Add one line item the council all missed:</strong> book takkyubin luggage forwarding from Tokyo → Kyoto (before Day 4 camp) and Kyoto → Osaka (before Day 7 camp). ~¥8,000 total for 4 bags. This decouples neighborhood choice from luggage logistics entirely.</p>
+</div>
+
+<div class="first-thing">
+  <h3>The one thing to do first</h3>
+  <p style="color:#fcfaf2; margin:0;"><strong>Text the group tonight:</strong> "For the Tokyo arrival leg, are you OK with 4 people in 1 room with 2 double beds (two of the guys share one double)?" This yes/no gates Sakura Cross Shinjuku ($440) vs Super Hotel Akihabara ($800+ for 2 rooms). Every other decision can wait 24 hours. This one determines the biggest line item.</p>
+</div>
+
+<h2>Full advisor responses</h2>
+
+<details class="advisor">
+  <summary><span><span class="advisor-label">The Executor</span> strongest — B</span></summary>
+  <div class="body">
+    <p><strong>Book these Monday:</strong></p>
+    <p><strong>Tokyo Arrival:</strong> Sakura Cross Shinjuku East, $440. Day 4 bus leaves from Shinjuku Expressway Bus Terminal. Takao via Keio Line from Shinjuku. Akihabara wrong for Day 3/4. Post-7:30pm landing: NRT N'EX or Limousine Bus to Shinjuku Station, 10-min walk, front desk typically staffed until 11pm — confirm late check-in.</p>
+    <p><strong>Kyoto:</strong> APA Gion, $283. Aoi's shared bath is friction you don't need. APA wins on location + two real rooms (couple gets privacy).</p>
+    <p><strong>Osaka:</strong> Eslead Namba South III, $310. Namba = Dotonbori on foot, direct train to USJ, 37m² sleeps all 4.</p>
+    <p><strong>Tokyo Return:</strong> Super Hotel Akihabara, $193. Cheapest, walkable to Nakano/Shibuya/Shimokita. DisneySea = 35 min via Keihin-Tohoku + Keiyo Line.</p>
+    <p><strong>Total $1,226 / $307pp</strong> for 9 hotel nights. Book APA and Super Hotel direct on their sites (cheaper + easier to modify). Book Sakura Cross and Eslead through Rakuten.</p>
+  </div>
+</details>
+
+<details class="advisor">
+  <summary><span><span class="advisor-label">The Contrarian</span> four fatal flaws</span></summary>
+  <div class="body">
+    <p><strong>1. Sakura Cross Shinjuku</strong> — 1 room, 2 double beds for 4 adults. Two grown men in a 140cm Japanese double bed. ⭐5.0 w/119 reviews is noise.</p>
+    <p><strong>2. Aoi Nakamoto</strong> — shared bath, tatami, 97 reviews. Couple sharing a bathhouse with strangers after Kasagi camping. Futons after Takao + camping + Fushimi will wreck someone's back.</p>
+    <p><strong>3. Osaka dates don't match.</strong> Kyoto ends Jun 10, Kasagi camp Day 7. Where are you Jun 10–12?</p>
+    <p><strong>4. Akihabara base for Day 3/4 Shinjuku departures in rainy season</strong> = two cross-Tokyo commutes with hiking packs. Distance score is lying — weight Shinjuku access.</p>
+    <p>Fix the calendar first. Then rescore.</p>
+  </div>
+</details>
+
+<details class="advisor">
+  <summary><span><span class="advisor-label">The First Principles Thinker</span> the bed question is the only real decision</span></summary>
+  <div class="body">
+    <p>You're optimizing the wrong variable. A hotel = bed per person + bathroom without queue-rage + door close to first activity. Rakuten rating column is noise — 119 reviews vs 3,489 aren't the same signal, and 4.17 in Japan means spotless.</p>
+    <p><strong>Tokyo arrival:</strong> Day 4 Shinjuku bus = Sakura Cross Shinjuku East is the only correct answer. Cheapest, too. Stop overthinking.</p>
+    <p>One room with 2 double beds for a couple + 2 straight male friends is a disaster. Ask them. If no, need Super Hotel Akihabara (2 rooms), accept the Shinjuku transit tax on Day 4.</p>
+    <p><strong>Kyoto:</strong> Aoi shared bath in rainy season = friction. APA Gion, connecting rooms, done.</p>
+    <p><strong>Osaka:</strong> Eslead Namba. <strong>Tokyo return:</strong> Super Hotel Akihabara — 1 night, cheapest wins, neighborhood irrelevant.</p>
+    <p>The bed question is the only real decision. Ask it tonight.</p>
+  </div>
+</details>
+
+<details class="advisor">
+  <summary><span><span class="advisor-label">The Expansionist</span> the spreadsheet is lying about what this trip is</span></summary>
+  <div class="body">
+    <p>Stop optimizing for cost-per-bed.</p>
+    <p><strong>Tokyo arrival: Onyado Nono Asakusa Villa.</strong> 150m from Senso-ji = 5:30am tourists-free. Ryokan onsen after Takao = sore-legs miracle. $220/person premium buys a core memory.</p>
+    <p><strong>Kyoto: Guest House Aoi Nakamoto.</strong> Cheapest AND most distinctive. Authentic ryokan. APA is Cleveland.</p>
+    <p><strong>Osaka: Eslead Namba South III.</strong> Steal of the trip. Shinsekai is a vibe to visit, not sleep in.</p>
+    <p><strong>Tokyo return: Super Hotel Akihabara.</strong> Sleep-and-leave.</p>
+    <p>Neighborhoods wrong? Yes — Shinjuku East for arrival is a mistake. Asakusa-base means Uber to the bus with fresh legs. Total ~$2,190. Spend the delta on the ryokan. You won't remember the $110 room.</p>
+  </div>
+</details>
+
+<details class="advisor">
+  <summary><span><span class="advisor-label">The Outsider</span> coming in cold — what does 150m from Gion even mean?</span></summary>
+  <div class="body">
+    <p>Biggest red flag: 4 people = 1 couple + 2 single guys. "1 room, 2 double beds for 4" — two straight male friends in the same bed? Couple splits? Not addressed in scoring. "Triple Serta beds" = 3 beds, 4 people. Who sleeps where?</p>
+    <p>Day 2 Asakusa, Day 3 Shinjuku, Day 4 Shinjuku — two of three days from Shinjuku, why is Akihabara winning?</p>
+    <p>Kyoto Aoi Nakamoto shared bath with a couple — unflagged comfort question.</p>
+    <p>Osaka Eslead Namba looks right.</p>
+    <p>Tokyo return: DisneySea is in Urayasu, nowhere near Akihabara. Pick cheapest near airport transfer.</p>
+    <p>Neighborhoods mean nothing to me — is "150m from Gion" 150m from the tourist strip or from a quiet edge? That matters.</p>
+    <p><strong>Also: where's the luggage on camping nights?</strong> Hotels usually won't hold bags across a multi-night gap.</p>
+  </div>
+</details>
+
+<h2>Peer review highlights</h2>
+<ul>
+  <li><strong>4 of 5 reviewers</strong> picked the Executor (B) as strongest — only response that commits with specific picks, prices, and transit details.</li>
+  <li><strong>4 of 5 reviewers</strong> flagged the Expansionist (D) as biggest blind spot — romanticizes the trip, ignores bed config, violates stated budget priority, wrong on Kyoto geography.</li>
+  <li><strong>5 of 5 reviewers</strong> flagged the <em>June 10–12 calendar gap</em> and <em>luggage across camping nights</em> as things the council missed collectively — only the Contrarian half-caught the calendar, and the Outsider only gestured at luggage. No one solved either until peer review.</li>
+</ul>
+
+<footer class="doc-foot">
+  Council session · April 17 2026 · 5 advisors · 5 anonymized peer reviews · chairman synthesis<br>
+  Transcript: <code>council/council-transcript-20260417-234658.md</code>
+</footer>
+
+</div>
+</body>
+</html>
