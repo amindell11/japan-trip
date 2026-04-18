@@ -588,6 +588,29 @@ function setView(view) {
   }
 }
 
+let allPlacesForItin = [];
+
+function allPlacesIncludingCoordless(data) {
+  const out = [];
+  for (const s of data.sections) {
+    for (const g of s.groups) {
+      for (const p of g.places) {
+        out.push({
+          name: p.name,
+          slug: slugify(p.name),
+          city: s.name,
+          group: g.name,
+          tags: p.tags || [],
+          summary: p.summary || "",
+          emoji: iconFor(p),
+          links: p.links || [],
+        });
+      }
+    }
+  }
+  return out;
+}
+
 Promise.all([getTripData(), loadHotels()]).then(([data]) => {
   document.querySelector("h1.site-title").textContent = data.title;
   document.title = data.title;
@@ -597,9 +620,11 @@ Promise.all([getTripData(), loadHotels()]).then(([data]) => {
   for (const s of data.sections) list.appendChild(renderSection(s));
 
   allPlacesList = allPlaces(data);
+  allPlacesForItin = allPlacesIncludingCoordless(data);
   renderFilterBar(data.sections.map((s) => s.name));
   initMap();
   renderStaysView();
+  initItinerary();
 
   for (const btn of document.querySelectorAll(".tab")) {
     btn.addEventListener("click", () => setView(btn.dataset.view));
@@ -630,4 +655,596 @@ function loadCardStats() {
       if (txt) slot.textContent = txt;
     }
   });
+}
+
+/* ---------- Itinerary board ---------- */
+
+const DAY_COUNT = 12;
+const FALLBACK_EMOJIS = ["✨","🌸","🍡","🗾","🍵","🚅","🏮","🎐","📸","🧭","🎋","🍥"];
+
+const boardState = {
+  entries: [],
+  editingId: null,
+  dragging: false,
+  paletteQuery: "",
+};
+
+const sortables = new Map();
+
+function initItinerary() {
+  buildBoardShell();
+
+  if (window.Trip?.configured) {
+    window.Trip.subscribeItinerary((entries) => {
+      boardState.entries = entries;
+      reconcileBoard();
+    });
+    window.Trip.on(() => {
+      reconcileBoard();
+    });
+  } else {
+    reconcileBoard();
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[c]));
+}
+
+function hashInt(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+function placeFor(slug) {
+  if (!slug) return null;
+  return allPlacesForItin.find((p) => p.slug === slug) || null;
+}
+
+function entryEmoji(entry) {
+  const p = placeFor(entry.placeSlug);
+  if (p) {
+    const full = TRIP_DATA
+      ? (() => {
+          const hit = findPlaceBySlug(TRIP_DATA, p.slug);
+          return hit ? hit.place : null;
+        })()
+      : null;
+    if (full) return iconFor(full);
+  }
+  return FALLBACK_EMOJIS[hashInt(entry.id || entry.title || "") % FALLBACK_EMOJIS.length];
+}
+
+function entryStripeColor(entry) {
+  const p = placeFor(entry.placeSlug);
+  if (p && CITY_COLORS[p.city]) return CITY_COLORS[p.city];
+  return null;
+}
+
+function groupEntriesByDay(entries) {
+  const byDay = new Map();
+  for (let d = 1; d <= DAY_COUNT; d++) byDay.set(d, []);
+  for (const e of entries) {
+    const d = Number(e.day);
+    if (!Number.isFinite(d) || d < 1 || d > DAY_COUNT) continue;
+    byDay.get(d).push(e);
+  }
+  for (const list of byDay.values()) {
+    list.sort((a, b) => {
+      const ao = typeof a.order === "number" ? a.order : 0;
+      const bo = typeof b.order === "number" ? b.order : 0;
+      if (ao !== bo) return ao - bo;
+      const aMs = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+      const bMs = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+      return aMs - bMs;
+    });
+  }
+  return byDay;
+}
+
+function buildBoardShell() {
+  const board = document.getElementById("itinerary-board");
+  if (!board || board.dataset.built === "1") return;
+  board.dataset.built = "1";
+  board.innerHTML = "";
+
+  const daysStrip = el("div", "board-days-strip");
+  for (let d = 1; d <= DAY_COUNT; d++) {
+    daysStrip.appendChild(buildDayColumn(d));
+  }
+  board.appendChild(daysStrip);
+
+  board.appendChild(buildIdeasPanel());
+}
+
+function buildDayColumn(dayNum) {
+  const col = el("section", "board-col board-col-day");
+  col.dataset.key = `day-${dayNum}`;
+
+  const head = el("div", "board-col-head");
+  head.innerHTML = `
+    <span class="board-col-day-num">Day ${dayNum}</span>
+    <span class="board-col-count" data-count></span>
+  `;
+  col.appendChild(head);
+
+  const list = el("div", "board-col-list");
+  list.dataset.day = String(dayNum);
+  col.appendChild(list);
+
+  col.appendChild(buildQuickAdd(dayNum));
+  return col;
+}
+
+function buildQuickAdd(dayNum) {
+  const wrap = el("div", "board-add");
+  wrap.dataset.day = String(dayNum);
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "board-add-input";
+  input.placeholder = "+ add note…";
+
+  const submit = async () => {
+    const title = input.value.trim();
+    if (!title) return;
+    const siblings = getCardOrdersForDay(dayNum);
+    const topOrder = siblings.length ? siblings[0] - 1 : 0;
+    try {
+      await window.Trip.addItineraryEntry({
+        day: dayNum,
+        order: topOrder,
+        placeSlug: null,
+        title,
+        notes: "",
+        tickets: [],
+      });
+      input.value = "";
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      submit();
+    }
+  });
+
+  wrap.append(input);
+  return wrap;
+}
+
+function buildIdeasPanel() {
+  const section = el("section", "board-ideas");
+  section.innerHTML = `
+    <div class="board-ideas-head">
+      <span class="board-ideas-emoji">📝</span>
+      <span class="board-ideas-title">Ideas</span>
+      <span class="board-ideas-sub">drag a place onto a day</span>
+      <input class="board-ideas-search" type="search" placeholder="Search name, city, or tag…" aria-label="Search places" />
+      <span class="board-ideas-count" data-ideas-count></span>
+    </div>
+    <div class="board-ideas-list" data-day="palette"></div>
+  `;
+  const search = section.querySelector(".board-ideas-search");
+  search.value = boardState.paletteQuery;
+  search.addEventListener("input", () => {
+    boardState.paletteQuery = search.value;
+    renderPalette();
+  });
+  return section;
+}
+
+function getCardOrdersForDay(dayNum) {
+  const list = document.querySelector(`.board-col-list[data-day="${dayNum}"]`);
+  if (!list) return [];
+  return [...list.querySelectorAll(":scope > .board-card")].map((el) => Number(el.dataset.order));
+}
+
+function paletteMatches(place, query) {
+  if (!query) return true;
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  if (place.name.toLowerCase().includes(q)) return true;
+  if (place.city.toLowerCase().includes(q)) return true;
+  if (place.group && place.group.toLowerCase().includes(q)) return true;
+  for (const t of place.tags || []) {
+    if (t.toLowerCase().includes(q)) return true;
+  }
+  return false;
+}
+
+function reconcileBoard() {
+  buildBoardShell();
+  if (boardState.dragging) {
+    boardState.pendingReconcile = true;
+    return;
+  }
+  const byDay = groupEntriesByDay(boardState.entries);
+  const user = window.Trip?.currentUser;
+  const canDrag = !!user;
+
+  for (let d = 1; d <= DAY_COUNT; d++) {
+    const list = document.querySelector(`.board-col-list[data-day="${d}"]`);
+    if (!list) continue;
+    const entries = byDay.get(d) || [];
+
+    list.innerHTML = "";
+    if (entries.length === 0) {
+      list.appendChild(el("div", "board-col-empty", "Drop here"));
+    }
+    for (const entry of entries) {
+      const editing = user && boardState.editingId === entry.id;
+      list.appendChild(
+        editing ? renderCardEditor(entry) : renderCard(entry, user)
+      );
+    }
+
+    const col = list.closest(".board-col");
+    const countSlot = col.querySelector("[data-count]");
+    if (countSlot) countSlot.textContent = entries.length ? `· ${entries.length}` : "";
+
+    ensureDaySortable(list, canDrag);
+  }
+
+  renderPalette();
+  updateAuthAffordances(user);
+}
+
+function renderPalette() {
+  const list = document.querySelector('.board-ideas-list[data-day="palette"]');
+  if (!list) return;
+  list.innerHTML = "";
+  const filtered = allPlacesForItin.filter((p) => paletteMatches(p, boardState.paletteQuery));
+  for (const p of filtered) list.appendChild(renderPaletteCard(p));
+  if (filtered.length === 0) {
+    list.appendChild(el("div", "board-palette-empty", "No matches — try a different tag or name."));
+  }
+  const countSlot = document.querySelector("[data-ideas-count]");
+  if (countSlot) {
+    countSlot.textContent = `${filtered.length} / ${allPlacesForItin.length}`;
+  }
+  ensurePaletteSortable(list, !!window.Trip?.currentUser);
+}
+
+function renderPaletteCard(place) {
+  const card = el("article", "board-card board-palette-card");
+  card.dataset.placeSlug = place.slug;
+  const color = CITY_COLORS[place.city];
+  if (color) card.style.setProperty("--stripe", color);
+
+  const tagRow = (place.tags || [])
+    .slice(0, 3)
+    .map((t) => `<span class="board-card-tag">${escapeHtml(t)}</span>`)
+    .join("");
+
+  card.innerHTML = `
+    <div class="board-card-head">
+      <span class="board-card-emoji">${escapeHtml(place.emoji || "📍")}</span>
+      <div class="board-card-title-wrap">
+        <span class="board-card-title">${escapeHtml(place.name)}</span>
+        <span class="board-palette-city">${escapeHtml(place.city)}</span>
+      </div>
+    </div>
+    ${tagRow ? `<div class="board-card-tags">${tagRow}</div>` : ""}
+  `;
+  return card;
+}
+
+function updateAuthAffordances(user) {
+  const configured = window.Trip?.configured;
+  for (const wrap of document.querySelectorAll(".board-add")) {
+    const input = wrap.querySelector(".board-add-input");
+    if (!configured) {
+      input.disabled = true;
+      input.placeholder = "Sign-in disabled";
+    } else if (!user) {
+      input.disabled = true;
+      input.placeholder = "Sign in to plan";
+    } else {
+      input.disabled = false;
+      input.placeholder = "+ add note…";
+    }
+  }
+}
+
+function ensureDaySortable(list, enabled) {
+  if (typeof Sortable === "undefined") return;
+  let inst = sortables.get(list);
+  if (inst) {
+    inst.option("disabled", !enabled);
+    return;
+  }
+  inst = Sortable.create(list, {
+    group: { name: "trip", pull: true, put: true },
+    animation: 160,
+    ghostClass: "board-card-ghost",
+    chosenClass: "board-card-chosen",
+    dragClass: "board-card-drag",
+    disabled: !enabled,
+    draggable: ".board-card",
+    filter: ".board-card-editing, .board-col-empty",
+    delay: 120,
+    delayOnTouchOnly: true,
+    touchStartThreshold: 6,
+    onStart: () => {
+      boardState.dragging = true;
+    },
+    onEnd: async (evt) => {
+      boardState.dragging = false;
+      await handleDrop(evt);
+      if (boardState.pendingReconcile) {
+        boardState.pendingReconcile = false;
+        reconcileBoard();
+      }
+    },
+  });
+  sortables.set(list, inst);
+}
+
+function ensurePaletteSortable(list, enabled) {
+  if (typeof Sortable === "undefined") return;
+  let inst = sortables.get(list);
+  if (inst) {
+    inst.option("disabled", !enabled);
+    return;
+  }
+  inst = Sortable.create(list, {
+    group: { name: "trip", pull: "clone", put: false },
+    sort: false,
+    animation: 160,
+    ghostClass: "board-card-ghost",
+    chosenClass: "board-card-chosen",
+    dragClass: "board-card-drag",
+    disabled: !enabled,
+    draggable: ".board-card",
+    delay: 120,
+    delayOnTouchOnly: true,
+    touchStartThreshold: 6,
+    onStart: () => {
+      boardState.dragging = true;
+    },
+    onEnd: async (evt) => {
+      boardState.dragging = false;
+      await handleDrop(evt);
+      if (boardState.pendingReconcile) {
+        boardState.pendingReconcile = false;
+        reconcileBoard();
+      }
+    },
+  });
+  sortables.set(list, inst);
+}
+
+async function handleDrop(evt) {
+  const toDay = Number(evt.to.dataset.day);
+  const fromPalette = evt.from.dataset.day === "palette";
+
+  if (fromPalette) {
+    if (!Number.isFinite(toDay)) {
+      evt.item.remove();
+      return;
+    }
+    const placeSlug = evt.item.dataset.placeSlug;
+    const place = placeFor(placeSlug);
+    if (!place) {
+      evt.item.remove();
+      return;
+    }
+    const order = computeOrderFromDom(evt.to, evt.item);
+    evt.item.remove();
+    try {
+      await window.Trip.addItineraryEntry({
+        day: toDay,
+        order,
+        placeSlug,
+        title: place.name,
+        notes: "",
+        tickets: [],
+      });
+    } catch (e) {
+      alert(e.message);
+      reconcileBoard();
+    }
+    return;
+  }
+
+  const id = evt.item.dataset.id;
+  if (!id || !Number.isFinite(toDay)) {
+    reconcileBoard();
+    return;
+  }
+  const order = computeOrderFromDom(evt.to, evt.item);
+  evt.item.dataset.order = String(order);
+  try {
+    await window.Trip.updateItineraryEntry(id, { day: toDay, order });
+  } catch (e) {
+    alert(e.message);
+    reconcileBoard();
+  }
+}
+
+function computeOrderFromDom(list, droppedEl) {
+  const siblings = [...list.querySelectorAll(":scope > .board-card")];
+  const idx = siblings.indexOf(droppedEl);
+  const before = siblings[idx - 1];
+  const after = siblings[idx + 1];
+  const bo = before ? Number(before.dataset.order) : null;
+  const ao = after ? Number(after.dataset.order) : null;
+  if (bo == null && ao == null) return 0;
+  if (bo == null) return ao - 1;
+  if (ao == null) return bo + 1;
+  return (bo + ao) / 2;
+}
+
+function renderCard(entry, user) {
+  const card = el("article", "board-card");
+  card.dataset.id = entry.id;
+  card.dataset.order = String(typeof entry.order === "number" ? entry.order : 0);
+
+  const stripe = entryStripeColor(entry);
+  if (stripe) card.style.setProperty("--stripe", stripe);
+  else card.classList.add("board-card-plain");
+
+  const head = el("div", "board-card-head");
+  head.innerHTML = `<span class="board-card-emoji">${escapeHtml(entryEmoji(entry))}</span>`;
+  const titleWrap = el("div", "board-card-title-wrap");
+  if (entry.placeSlug) {
+    const a = document.createElement("a");
+    a.href = "place.html?slug=" + encodeURIComponent(entry.placeSlug);
+    a.className = "board-card-title board-card-title-link";
+    a.textContent = entry.title;
+    a.addEventListener("mousedown", (ev) => ev.stopPropagation());
+    titleWrap.appendChild(a);
+  } else {
+    titleWrap.appendChild(el("span", "board-card-title", escapeHtml(entry.title)));
+  }
+  head.appendChild(titleWrap);
+
+  if (user && entry.createdBy?.uid === user.uid) {
+    const actions = el("div", "board-card-actions");
+    const editBtn = el("button", "board-card-btn", "✎");
+    editBtn.type = "button";
+    editBtn.title = "Edit";
+    editBtn.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      boardState.editingId = entry.id;
+      reconcileBoard();
+    });
+    const delBtn = el("button", "board-card-btn board-card-btn-danger", "×");
+    delBtn.type = "button";
+    delBtn.title = "Delete";
+    delBtn.addEventListener("click", async (ev) => {
+      ev.stopPropagation();
+      if (!confirm("Delete this card?")) return;
+      try {
+        await window.Trip.deleteItineraryEntry(entry.id);
+      } catch (e) {
+        alert(e.message);
+      }
+    });
+    actions.append(editBtn, delBtn);
+    head.appendChild(actions);
+  }
+
+  card.appendChild(head);
+
+  if (entry.notes) {
+    card.appendChild(el("p", "board-card-notes", escapeHtml(entry.notes)));
+  }
+
+  const tickets = (entry.tickets || []).filter((t) => t && t.url);
+  if (tickets.length) {
+    const ul = el("ul", "board-card-tickets");
+    for (const t of tickets) {
+      const li = document.createElement("li");
+      const a = document.createElement("a");
+      a.href = t.url;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = (t.label || "Ticket") + " ↗";
+      a.addEventListener("mousedown", (ev) => ev.stopPropagation());
+      li.appendChild(a);
+      ul.appendChild(li);
+    }
+    card.appendChild(ul);
+  }
+
+  return card;
+}
+
+function renderCardEditor(entry) {
+  const card = el("form", "board-card board-card-editing");
+  card.dataset.id = entry.id;
+  card.dataset.order = String(typeof entry.order === "number" ? entry.order : 0);
+
+  const tickets = (entry.tickets || []).map((t) => ({
+    label: t.label || "",
+    url: t.url || "",
+  }));
+  if (tickets.length === 0) tickets.push({ label: "", url: "" });
+
+  card.innerHTML = `
+    <input class="board-edit-title" type="text" value="${escapeHtml(entry.title || "")}" placeholder="Title" required />
+    <textarea class="board-edit-notes" rows="2" placeholder="Notes (optional)">${escapeHtml(entry.notes || "")}</textarea>
+    <div class="board-edit-tickets"></div>
+    <button type="button" class="board-edit-add-ticket">+ link</button>
+    <div class="board-edit-actions">
+      <button type="button" class="board-card-btn board-edit-cancel">Cancel</button>
+      <button type="submit" class="board-card-btn board-edit-save">Save</button>
+    </div>
+  `;
+
+  const ticketHost = card.querySelector(".board-edit-tickets");
+  const renderTickets = () => {
+    ticketHost.innerHTML = "";
+    tickets.forEach((t, i) => {
+      const row = el("div", "board-edit-ticket-row");
+      row.innerHTML = `
+        <input data-i="${i}" data-k="label" type="text" placeholder="Label" value="${escapeHtml(t.label)}" />
+        <input data-i="${i}" data-k="url" type="url" placeholder="https://…" value="${escapeHtml(t.url)}" />
+        <button type="button" class="board-card-btn board-card-btn-danger" data-rm="${i}">×</button>
+      `;
+      ticketHost.appendChild(row);
+    });
+  };
+  renderTickets();
+
+  ticketHost.addEventListener("input", (ev) => {
+    const i = ev.target.dataset.i;
+    const k = ev.target.dataset.k;
+    if (i != null && k) tickets[Number(i)][k] = ev.target.value;
+  });
+  ticketHost.addEventListener("click", (ev) => {
+    const rm = ev.target.dataset.rm;
+    if (rm != null) {
+      tickets.splice(Number(rm), 1);
+      if (tickets.length === 0) tickets.push({ label: "", url: "" });
+      renderTickets();
+    }
+  });
+  card.querySelector(".board-edit-add-ticket").addEventListener("click", () => {
+    tickets.push({ label: "", url: "" });
+    renderTickets();
+  });
+
+  const titleInput = card.querySelector(".board-edit-title");
+
+  card.querySelector(".board-edit-cancel").addEventListener("click", () => {
+    boardState.editingId = null;
+    reconcileBoard();
+  });
+
+  card.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const title = titleInput.value.trim();
+    if (!title) {
+      titleInput.focus();
+      return;
+    }
+    const cleanTickets = tickets
+      .map((t) => ({ label: t.label.trim(), url: t.url.trim() }))
+      .filter((t) => t.url);
+    try {
+      await window.Trip.updateItineraryEntry(entry.id, {
+        title,
+        notes: card.querySelector(".board-edit-notes").value.trim(),
+        tickets: cleanTickets,
+      });
+      boardState.editingId = null;
+    } catch (e) {
+      alert(e.message);
+    }
+  });
+
+  return card;
 }

@@ -69,6 +69,19 @@ service cloud.firestore {
           && resource.data.uid == request.auth.uid;
       }
     }
+
+    match /itinerary/{entryId} {
+      // Shared trip board: read-public; anyone signed in can drag cards
+      // around; delete is owner-only.
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.createdBy.uid == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 200;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null
+        && resource.data.createdBy.uid == request.auth.uid;
+    }
   }
 }
 ```

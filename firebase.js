@@ -129,6 +129,56 @@
     });
   }
 
+  function subscribeItinerary(cb) {
+    if (!configured) {
+      cb([]);
+      return () => {};
+    }
+    return db
+      .collection("itinerary")
+      .onSnapshot(
+        (snap) => {
+          const out = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          cb(out);
+        },
+        (err) => {
+          console.warn("[Trip] itinerary subscribe failed", err);
+          cb([]);
+        }
+      );
+  }
+
+  async function addItineraryEntry(data) {
+    if (!currentUser) throw new Error("Not signed in");
+    const ts = firebase.firestore.FieldValue.serverTimestamp();
+    await db.collection("itinerary").add({
+      ...data,
+      createdBy: {
+        uid: currentUser.uid,
+        name: currentUser.displayName || "Anon",
+        photo: currentUser.photoURL || null,
+      },
+      createdAt: ts,
+      updatedAt: ts,
+    });
+  }
+
+  async function updateItineraryEntry(id, patch) {
+    if (!currentUser) throw new Error("Not signed in");
+    await db.doc(`itinerary/${id}`).set(
+      {
+        ...patch,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+  }
+
+  async function deleteItineraryEntry(id) {
+    if (!currentUser) throw new Error("Not signed in");
+    await db.doc(`itinerary/${id}`).delete();
+  }
+
   function mountAuthSlot() {
     const slot = document.getElementById("auth-slot");
     if (!slot) return;
@@ -182,6 +232,10 @@
     getComments,
     addComment,
     deleteComment,
+    subscribeItinerary,
+    addItineraryEntry,
+    updateItineraryEntry,
+    deleteItineraryEntry,
     mountAuthSlot,
     get currentUser() {
       return currentUser;
