@@ -319,7 +319,7 @@ async function main() {
         lng: e.hotel.longitude,
         access,
         address,
-        image: e.hotel.hotelThumbnailUrl,
+        image: e.hotel.hotelImageUrl || e.hotel.hotelThumbnailUrl,
         url: e.hotel.hotelInformationUrl,
       });
       await sleep(120);
