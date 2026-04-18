@@ -188,13 +188,10 @@
     },
   };
 
+  init();
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => {
-      init();
-      mountAuthSlot();
-    });
+    document.addEventListener("DOMContentLoaded", mountAuthSlot);
   } else {
-    init();
     mountAuthSlot();
   }
 })();
