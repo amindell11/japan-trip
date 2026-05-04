@@ -1,6 +1,6 @@
 // Rakuten Travel hotel fetcher (VacantHotelSearch — real dates, availability).
-// Usage:
-//   RAKUTEN_APP_ID=... RAKUTEN_ACCESS_KEY=... node scripts/fetch_hotels.js
+// Setup once: copy .env.example to .env at repo root, fill in your keys.
+// Run:   node --env-file=.env scripts/fetch_hotels.js
 // Writes hotels.json at repo root.
 
 const fs = require("fs");
@@ -330,7 +330,7 @@ async function main() {
     const scored = scoreHotels(unique, places);
     scored.sort((a, b) => b.score - a.score);
     const top = [];
-    for (const e of scored.slice(0, 6)) {
+    for (const e of scored.slice(0, 15)) {
       const priceNightY = Math.round(e.perNightTotalY);
       const priceTotalY = Math.round(e.tripTotalY);
       const addressJa = `${e.hotel.address1 || ""}${e.hotel.address2 || ""}`;

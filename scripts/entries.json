@@ -1,0 +1,271 @@
+[
+  {
+    "day": 1,
+    "order": 100,
+    "title": "Land at Narita / Haneda — 7:30pm",
+    "placeSlug": null,
+    "notes": "Pick up SIM/pocket wifi and Suica/Pasmo IC card at the airport.",
+    "tickets": []
+  },
+  {
+    "day": 1,
+    "order": 200,
+    "title": "Tokyo Airbnb check-in",
+    "placeSlug": null,
+    "notes": "Drop bags. Aim to be out and exploring within an hour of landing.",
+    "tickets": []
+  },
+  {
+    "day": 1,
+    "order": 300,
+    "title": "Shibuya / Shinjuku — first night out",
+    "placeSlug": "shinjuku-golden-gai",
+    "notes": "Dinner + Golden Gai bar crawl. Easy pace — first night, fight jet lag with neon and ramen.",
+    "tickets": []
+  },
+  {
+    "day": 2,
+    "order": 100,
+    "title": "Senso-ji + Nakamise-dori (morning)",
+    "placeSlug": "asakusa-senso-ji-temple",
+    "notes": "Walk Nakamise-dori shopping street up to the temple. Snack stops along the way.",
+    "tickets": []
+  },
+  {
+    "day": 2,
+    "order": 200,
+    "title": "Ueno Park (afternoon)",
+    "placeSlug": "ueno-park",
+    "notes": "Gardens, shrines, museums. Tokyo National Museum if it's raining.",
+    "tickets": []
+  },
+  {
+    "day": 2,
+    "order": 300,
+    "title": "TeamLab Planets (evening)",
+    "placeSlug": "teamlab-planets",
+    "notes": "BOOK TICKETS IN ADVANCE — sells out. Barefoot immersive art, ~1.5 hrs inside.",
+    "tickets": [
+      { "label": "Buy tickets", "url": "https://www.teamlab.art/e/planets/" }
+    ]
+  },
+  {
+    "day": 3,
+    "order": 100,
+    "title": "Mount Takao — Trail 6 day hike",
+    "placeSlug": "mount-takao",
+    "notes": "<1 hr by train from central Tokyo. Trail 6 = stream crossings + forest canopy. ~3 hrs round trip. Mt. Fuji from the summit on clear days. Back in the city by afternoon.",
+    "tickets": []
+  },
+  {
+    "day": 4,
+    "order": 100,
+    "title": "Highway bus Shinjuku → Kawaguchiko",
+    "placeSlug": null,
+    "notes": "~2 hrs, ~$27 round trip. Book ahead. Pickup at Shinjuku Expressway Bus Terminal (Busta Shinjuku).",
+    "tickets": [
+      { "label": "Highway bus booking", "url": "https://highway-buses.jp/" }
+    ]
+  },
+  {
+    "day": 4,
+    "order": 200,
+    "title": "Lake Kawaguchi — bike + Kachi Kachi Ropeway",
+    "placeSlug": "lake-kawaguchi-mt-fuji",
+    "notes": "Bike the lakeshore. Take the Kachi Kachi (Mt. Fuji Panoramic) Ropeway up for the panoramic Fuji view.",
+    "tickets": [
+      { "label": "Mt. Fuji Panoramic Ropeway", "url": "https://www.mtfujiropeway.jp/en/" }
+    ]
+  },
+  {
+    "day": 4,
+    "order": 300,
+    "title": "Camp Night 1 — Retreat Camp Mahoroba",
+    "placeSlug": "retreat-camp-mahoroba",
+    "notes": "Wake up to Mt. Fuji sunrise. Have Hinata Rental deliver gear to the campsite, or use Soranoshita.",
+    "tickets": [
+      { "label": "Retreat Camp Mahoroba", "url": "https://retreatcamp-mahoroba.net/" },
+      { "label": "Hinata Rental", "url": "https://hinata-rental.me/" }
+    ]
+  },
+  {
+    "day": 5,
+    "order": 100,
+    "title": "Return gear → bus to Tokyo → Shinkansen to Kyoto",
+    "placeSlug": null,
+    "notes": "Pack up camp, return rental gear. Bus back to Shinjuku, grab luggage from Tokyo Airbnb, Shinkansen to Kyoto (~2.5 hrs, ~$130).",
+    "tickets": []
+  },
+  {
+    "day": 5,
+    "order": 200,
+    "title": "Kinkaku-ji (Golden Pavilion)",
+    "placeSlug": "kinkaku-ji-golden-pavilion",
+    "notes": "¥500 entry. Quick visit (~45 min). Goes well as an afternoon stop on a travel day.",
+    "tickets": []
+  },
+  {
+    "day": 5,
+    "order": 300,
+    "title": "Gion District — evening stroll",
+    "placeSlug": "gion-district",
+    "notes": "Lantern-lit alleys, traditional wooden machiya. Best after dark.",
+    "tickets": []
+  },
+  {
+    "day": 5,
+    "order": 400,
+    "title": "Philosopher's Path",
+    "placeSlug": "philosophers-path",
+    "notes": "Quiet canal-side walk. Pairs well with Gion if energy holds; otherwise save for Day 6 morning.",
+    "tickets": []
+  },
+  {
+    "day": 6,
+    "order": 100,
+    "title": "Fushimi Inari — full summit hike (early)",
+    "placeSlug": "fushimi-inari-taisha",
+    "notes": "GO EARLY (6–7am) for empty torii. Full summit hike ~2 hrs through quiet forest — most tourists turn back at the first viewpoint, do the whole thing. June = off-peak, lighter crowds.",
+    "tickets": []
+  },
+  {
+    "day": 6,
+    "order": 200,
+    "title": "Arashiyama — bamboo forest + bikes",
+    "placeSlug": "arashiyama-bamboo-forest",
+    "notes": "Rent bikes. Bamboo grove, river, monkey park, Tenryu-ji temple. Allow a half day.",
+    "tickets": []
+  },
+  {
+    "day": 7,
+    "order": 100,
+    "title": "Nara Park & Todai-ji",
+    "placeSlug": "nara-park-todai-ji",
+    "notes": "1,000+ wild deer. Buy shika senbei (deer crackers) for the experience. Todai-ji's giant bronze Buddha is a must.",
+    "tickets": []
+  },
+  {
+    "day": 7,
+    "order": 200,
+    "title": "Train to Kasagi (JR Kansai Line)",
+    "placeSlug": null,
+    "notes": "~5 min walk from Kasagi Station to the campground.",
+    "tickets": []
+  },
+  {
+    "day": 7,
+    "order": 300,
+    "title": "Camp Night 2 — Kasagi Campground",
+    "placeSlug": "kasagi-campground",
+    "notes": "30,000 sqm along Kizu River. No reservation needed, ~¥1,000/person. Stargazing, river views, Mt. Kasagi hiking nearby. BYO gear.",
+    "tickets": []
+  },
+  {
+    "day": 8,
+    "order": 100,
+    "title": "Camp Night 3 — Spring Hiyoshi (Option A)",
+    "placeSlug": "spring-hiyoshi-camp-field",
+    "notes": "Option A — rugged. Hot springs, canoeing, fishing. Tent/gear rental on site, English staff. ~$25–40/person. 25 min walk from JR Hiyoshi Station.",
+    "tickets": []
+  },
+  {
+    "day": 8,
+    "order": 200,
+    "title": "Camp Night 3 — GRAX Rurikei (Option B)",
+    "placeSlug": "grax-rurikei",
+    "notes": "Option B — glamping. Everything provided (tents, utensils, food, on-site onsen). ~1 hr 15 min from Kyoto. ~$65–120/person. PICK ONE: this OR Spring Hiyoshi.",
+    "tickets": []
+  },
+  {
+    "day": 9,
+    "order": 100,
+    "title": "Train Kyoto → Osaka (~15 min)",
+    "placeSlug": null,
+    "notes": "Quick hop. Drop bags at Osaka stay before sightseeing.",
+    "tickets": []
+  },
+  {
+    "day": 9,
+    "order": 200,
+    "title": "Osaka Castle (afternoon)",
+    "placeSlug": "osaka-castle",
+    "notes": "Huge surrounding park. Museum inside has city views from the top floor.",
+    "tickets": []
+  },
+  {
+    "day": 9,
+    "order": 300,
+    "title": "Dotonbori — food crawl (evening)",
+    "placeSlug": "dotonbori",
+    "notes": "Takoyaki, okonomiyaki, kushikatsu. Glico Man neon sign photo. Kuidaore — eat until you drop.",
+    "tickets": []
+  },
+  {
+    "day": 10,
+    "order": 100,
+    "title": "Minoh Falls (Option A — nature)",
+    "placeSlug": "minoh-falls",
+    "notes": "30 min north of central Osaka. 2.7km paved trail through forested gorge to a 33m waterfall. Try maple leaf tempura along the path.",
+    "tickets": []
+  },
+  {
+    "day": 10,
+    "order": 200,
+    "title": "Universal Studios Japan (Option B — theme park)",
+    "placeSlug": "universal-studios-japan",
+    "notes": "Super Nintendo World. Buy Express Pass tickets in advance to skip the brutal queues. PICK ONE: this OR Minoh Falls.",
+    "tickets": [
+      { "label": "USJ tickets", "url": "https://www.usj.co.jp/web/en/us" }
+    ]
+  },
+  {
+    "day": 11,
+    "order": 100,
+    "title": "Shinkansen Osaka → Tokyo",
+    "placeSlug": null,
+    "notes": "~2.5 hrs, ~$130. Book a window seat on the right side (D) for Mt. Fuji views going east.",
+    "tickets": []
+  },
+  {
+    "day": 11,
+    "order": 200,
+    "title": "Shibuya Sky — sunset",
+    "placeSlug": "shibuya-sky",
+    "notes": "Open-air 47F observation deck. Book a sunset slot in advance — it sells out.",
+    "tickets": [
+      { "label": "Shibuya Sky tickets", "url": "https://www.shibuya-scramble-square.com/sky/en/" }
+    ]
+  },
+  {
+    "day": 11,
+    "order": 300,
+    "title": "Optional: DisneySea / Nakano Broadway / Shimokitazawa",
+    "placeSlug": null,
+    "notes": "Pick whichever you didn't catch earlier. DisneySea is a full day; Nakano Broadway = retro anime/manga shopping arcade; Shimokitazawa = vintage clothes + indie cafés.",
+    "tickets": []
+  },
+  {
+    "day": 11,
+    "order": 400,
+    "title": "Farewell ramen crawl",
+    "placeSlug": null,
+    "notes": "Pick 2–3 spots in different styles (tonkotsu, shoyu, tsukemen). Make it count.",
+    "tickets": []
+  },
+  {
+    "day": 12,
+    "order": 100,
+    "title": "Don Quijote souvenir run",
+    "placeSlug": null,
+    "notes": "Last-minute snacks, KitKats, weird Japanese gadgets. Tax-free counter if you're spending >¥5,000.",
+    "tickets": []
+  },
+  {
+    "day": 12,
+    "order": 200,
+    "title": "Head to airport — fly home",
+    "placeSlug": null,
+    "notes": "Narita Express or Limousine Bus. Allow 3 hrs before international departure.",
+    "tickets": []
+  }
+]

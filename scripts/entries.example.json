@@ -1,0 +1,23 @@
+[
+  {
+    "day": 1,
+    "title": "Arrive at Narita (NRT)",
+    "notes": "JR Pass exchange at the station counter before leaving the airport.",
+    "placeSlug": null,
+    "tickets": [
+      { "label": "Flight confirmation", "url": "https://example.com/booking" }
+    ]
+  },
+  {
+    "day": 1,
+    "title": "Senso-ji",
+    "placeSlug": "senso-ji",
+    "notes": "Evening visit — fewer crowds.",
+    "tickets": []
+  },
+  {
+    "day": 2,
+    "title": "Tsukiji Outer Market — breakfast",
+    "placeSlug": "tsukiji-outer-market"
+  }
+]

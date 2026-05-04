@@ -23,6 +23,18 @@ const TRIP_DATA = {
               ],
             },
             {
+              name: "Shibuya Sky",
+              travel: "atop Shibuya Scramble Square",
+              summary:
+                "Open-air rooftop observation deck on the 47th floor of Shibuya Scramble Square. 360° city panorama, killer at sunset. Book a timed entry slot in advance — it sells out.",
+              tags: ["urban", "scenic", "iconic"],
+              wiki: "Shibuya_Scramble_Square",
+              coords: [35.6585, 139.7019],
+              links: [
+                { label: "Tickets & official site", url: "https://www.shibuya-scramble-square.com/sky/en/" },
+              ],
+            },
+            {
               name: "Shinjuku / Golden Gai",
               summary:
                 "Tokyo's biggest transit hub surrounded by shopping and restaurants. Golden Gai is a maze of 200+ tiny themed bars seating 5–10 people each — perfect for a group night out.",
@@ -233,6 +245,31 @@ const TRIP_DATA = {
               links: [
                 { label: "Mt. Fuji Panoramic Ropeway", url: "https://www.mtfujiropeway.jp/en/" },
                 { label: "Highway bus (Shinjuku → Kawaguchiko)", url: "https://highway-buses.jp/" },
+              ],
+            },
+            {
+              name: "Retreat Camp Mahoroba",
+              travel: "near Lake Saiko, ~10 min from Kawaguchiko",
+              summary:
+                "Lakeside campsite with Mt. Fuji views, near Lake Saiko in the Five Lakes region. Tent pads, cabins, and basic facilities. Your camp night 1 option. Hinata Rental can deliver gear to the site.",
+              tags: ["camping", "nature", "fuji-view"],
+              wiki: "",
+              coords: [35.5031, 138.6650],
+              links: [
+                { label: "Retreat Camp Mahoroba", url: "https://retreatcamp-mahoroba.net/" },
+                { label: "Hinata Rental (gear delivery)", url: "https://hinata-rental.me/" },
+              ],
+            },
+            {
+              name: "Tokyo DisneySea",
+              travel: "45 min east from central Tokyo",
+              summary:
+                "Disney's nautical-themed park in Urayasu — exists nowhere else in the world. Stunning detail, the only Disney park aimed primarily at adults. Buy tickets in advance.",
+              tags: ["theme-park", "iconic"],
+              wiki: "Tokyo_DisneySea",
+              coords: [35.6267, 139.8851],
+              links: [
+                { label: "Official site & tickets", url: "https://www.tokyodisneyresort.jp/en/tds/" },
               ],
             },
             {
