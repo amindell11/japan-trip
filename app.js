@@ -469,6 +469,47 @@ function renderStayCard(hotel, leg) {
 
 const COUNCIL_REPORT_PATH = "council/council-report-20260417-234658.html";
 
+const STAYS_PER_LEG_KEY = "japanTrip.staysPerLeg";
+const STAYS_PER_LEG_OPTIONS = [3, 6, 10, "all"];
+
+function getStaysPerLeg() {
+  const raw = localStorage.getItem(STAYS_PER_LEG_KEY);
+  if (raw === "all") return "all";
+  const n = parseInt(raw, 10);
+  return STAYS_PER_LEG_OPTIONS.includes(n) ? n : 6;
+}
+
+function setStaysPerLeg(value) {
+  localStorage.setItem(STAYS_PER_LEG_KEY, String(value));
+}
+
+function buildExternalSearchLinks(leg, guests) {
+  const adults = guests?.adults || 4;
+  const rooms = guests?.rooms || 2;
+  const loc = encodeURIComponent(`${leg.city}, Japan`);
+  const cityDash = encodeURIComponent(`${leg.city}--Japan`);
+  const ci = leg.checkin;
+  const co = leg.checkout;
+  return [
+    {
+      label: "Airbnb",
+      url: `https://www.airbnb.com/s/${cityDash}/homes?checkin=${ci}&checkout=${co}&adults=${adults}`,
+    },
+    {
+      label: "Booking",
+      url: `https://www.booking.com/searchresults.html?ss=${loc}&checkin=${ci}&checkout=${co}&group_adults=${adults}&no_rooms=${rooms}`,
+    },
+    {
+      label: "Google Hotels",
+      url: `https://www.google.com/travel/hotels/${encodeURIComponent(leg.city)}?q=${loc}&checkin=${ci}&checkout=${co}&adults=${adults}`,
+    },
+    {
+      label: "Expedia",
+      url: `https://www.expedia.com/Hotel-Search?destination=${loc}&startDate=${ci}&endDate=${co}&adults=${adults}`,
+    },
+  ];
+}
+
 function renderHotelsPanel(panel) {
   panel.innerHTML = "";
   if (!hotelData.legs.length) {
@@ -491,7 +532,29 @@ function renderHotelsPanel(panel) {
       <span class="muted">USD ≈ ¥${hotelData.usdRate || 150}</span>
     </p>
   `;
+
+  const controls = el("div", "stays-controls");
+  controls.appendChild(el("span", "stays-controls-label", "Show per city"));
+  const seg = el("div", "stays-count-seg");
+  const current = getStaysPerLeg();
+  for (const opt of STAYS_PER_LEG_OPTIONS) {
+    const btn = el(
+      "button",
+      "stays-count-btn" + (opt === current ? " active" : ""),
+      opt === "all" ? "All" : String(opt)
+    );
+    btn.addEventListener("click", () => {
+      if (opt === current) return;
+      setStaysPerLeg(opt);
+      renderHotelsPanel(panel);
+    });
+    seg.appendChild(btn);
+  }
+  controls.appendChild(seg);
+  hero.appendChild(controls);
   panel.appendChild(hero);
+
+  const perLeg = getStaysPerLeg();
 
   for (const leg of hotelData.legs) {
     const section = el("section", "stays-leg");
@@ -501,10 +564,33 @@ function renderHotelsPanel(panel) {
       <h2 class="stays-leg-title" style="border-color:${color}">${leg.label}</h2>
       <p class="stays-leg-sub">${formatDateRange(leg.checkin, leg.checkout)} · ${leg.nights} night${leg.nights > 1 ? "s" : ""}</p>
     `;
+    const links = el("div", "stays-extlinks");
+    links.appendChild(el("span", "stays-extlinks-label", "Search elsewhere:"));
+    for (const link of buildExternalSearchLinks(leg, hotelData.guests)) {
+      const a = el("a", "stays-extlink", link.label);
+      a.href = link.url;
+      a.target = "_blank";
+      a.rel = "noopener";
+      links.appendChild(a);
+    }
+    head.appendChild(links);
     section.appendChild(head);
+
+    const shown =
+      perLeg === "all" ? leg.hotels : leg.hotels.slice(0, perLeg);
     const grid = el("div", "stays-grid");
-    for (const h of leg.hotels) grid.appendChild(renderStayCard(h, leg));
+    for (const h of shown) grid.appendChild(renderStayCard(h, leg));
     section.appendChild(grid);
+
+    if (perLeg !== "all" && leg.hotels.length > shown.length) {
+      const more = el(
+        "p",
+        "stays-leg-more",
+        `+ ${leg.hotels.length - shown.length} more available — switch to a higher count above.`
+      );
+      section.appendChild(more);
+    }
+
     panel.appendChild(section);
   }
 }
@@ -679,6 +765,7 @@ function allPlacesIncludingCoordless(data) {
           summary: p.summary || "",
           emoji: iconFor(p),
           links: p.links || [],
+          coords: Array.isArray(p.coords) && p.coords.length === 2 ? p.coords : null,
         });
       }
     }
@@ -686,7 +773,7 @@ function allPlacesIncludingCoordless(data) {
   return out;
 }
 
-Promise.all([getTripData(), loadHotels()]).then(([data]) => {
+Promise.all([getTripData(), loadHotels(), loadTripDistances()]).then(([data]) => {
   document.querySelector("h1.site-title").textContent = data.title;
   document.title = data.title;
 
@@ -740,13 +827,99 @@ const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct"
 const WEEKDAY_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const FALLBACK_EMOJIS = ["✨","🌸","🍡","🗾","🍵","🚅","🏮","🎐","📸","🧭","🎋","🍥","🎏"];
 
+const TRANSIT_MODES = [
+  { value: "shinkansen", icon: "🚅", label: "Shinkansen" },
+  { value: "train",      icon: "🚆", label: "Train" },
+  { value: "subway",     icon: "🚇", label: "Subway / Metro" },
+  { value: "bus",        icon: "🚌", label: "Bus" },
+  { value: "taxi",       icon: "🚕", label: "Taxi" },
+  { value: "plane",      icon: "✈️", label: "Plane" },
+  { value: "ferry",      icon: "⛴️", label: "Ferry" },
+  { value: "cable",      icon: "🚠", label: "Cable / Ropeway" },
+];
+const TRANSIT_MODE_MAP = Object.fromEntries(TRANSIT_MODES.map((m) => [m.value, m]));
+
+// Auto-migration recipes for transit-shaped entries that pre-date the transit
+// card type. Keyed by exact title. Idempotent — only applied to entries whose
+// `kind` field is unset.
+const TRANSIT_KNOWN_MIGRATIONS = {
+  "Land at Narita / Haneda — 7:30pm": { mode: "plane", fromLabel: "", toLabel: "Narita / Haneda", arriveTime: "19:30" },
+  "Highway bus Shinjuku → Kawaguchiko": { mode: "bus", fromLabel: "Shinjuku", toLabel: "Kawaguchiko" },
+  "Return gear → bus to Tokyo → Shinkansen to Kyoto": { mode: "shinkansen", fromLabel: "Tokyo", toLabel: "Kyoto" },
+  "Train to Kasagi (JR Kansai Line)": { mode: "train", fromLabel: "", toLabel: "Kasagi", line: "JR Kansai Line" },
+  "Train Kyoto → Osaka (~15 min)": { mode: "train", fromLabel: "Kyoto", toLabel: "Osaka" },
+  "Shinkansen Osaka → Tokyo": { mode: "shinkansen", fromLabel: "Osaka", toLabel: "Tokyo" },
+  "Head to airport — fly home": { mode: "plane", fromLabel: "", toLabel: "home" },
+};
+
 const boardState = {
   entries: [],
   editingId: null,
   dragging: false,
   paletteQuery: "",
   dayTitles: {},
+  activeDay: null,
+  miniMap: null,
+  miniMapLayers: null,
+  pinByEntryId: new Map(),
+  pulseTimer: null,
+  transitMigrationRan: false,
 };
+
+// Walking-time helpers: cache from distances.json + runtime fallback.
+const WALKING_SPEED_MPS = 1.4; // ≈ 5 km/h
+const NEAR_KM = 2.0;
+const MID_KM = 5.0;
+const WALK_MAX_KM = 1.5; // hops longer than this → "directions ↗" instead of walking label
+let tripDistances = {};
+
+function distancePairKey(a, b) {
+  return a < b ? `${a}::${b}` : `${b}::${a}`;
+}
+
+function haversineKm(a, b) {
+  const R = 6371;
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(b[0] - a[0]);
+  const dLng = toRad(b[1] - a[1]);
+  const lat1 = toRad(a[0]),
+    lat2 = toRad(b[0]);
+  const x =
+    Math.sin(dLat / 2) ** 2 +
+    Math.sin(dLng / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
+
+// Returns walking info for a pair of slugs; falls back to coord-based estimate.
+//   { meters, walkSec, source: 'cache'|'computed'|null, hKm }
+function walkInfoForPair(slugA, slugB, coordsA, coordsB) {
+  if (!slugA || !slugB) return null;
+  if (slugA === slugB) {
+    return { meters: 0, walkSec: 0, source: "cache", hKm: 0 };
+  }
+  const cached = tripDistances[distancePairKey(slugA, slugB)];
+  const hKm = coordsA && coordsB ? haversineKm(coordsA, coordsB) : null;
+  if (cached) {
+    return { meters: cached.meters, walkSec: cached.walkSec, source: "cache", hKm };
+  }
+  if (coordsA && coordsB) {
+    const meters = Math.round(hKm * 1000);
+    const walkSec = Math.round(meters / WALKING_SPEED_MPS);
+    return { meters, walkSec, source: "computed", hKm };
+  }
+  return null;
+}
+
+function loadTripDistances() {
+  return fetch("distances.json")
+    .then((r) => (r.ok ? r.json() : {}))
+    .then((data) => {
+      tripDistances = data || {};
+    })
+    .catch(() => {
+      tripDistances = {};
+    });
+}
 
 function dateForDay(dayNum) {
   const [y, m, d] = TRIP_START.split("-").map(Number);
@@ -814,6 +987,11 @@ function placeFor(slug) {
 }
 
 function entryEmoji(entry) {
+  if (entry.kind === "transit") {
+    const m = TRANSIT_MODE_MAP[entry.mode];
+    if (m) return m.icon;
+    return "🚆";
+  }
   const p = placeFor(entry.placeSlug);
   if (p) {
     const full = TRIP_DATA
@@ -828,9 +1006,73 @@ function entryEmoji(entry) {
 }
 
 function entryStripeColor(entry) {
+  if (entry.kind === "transit") {
+    const fromSlug = entry.from?.slug;
+    const fromPlace = fromSlug ? placeFor(fromSlug) : null;
+    if (fromPlace && CITY_COLORS[fromPlace.city]) return CITY_COLORS[fromPlace.city];
+    return "#7a7a7a";
+  }
   const p = placeFor(entry.placeSlug);
   if (p && CITY_COLORS[p.city]) return CITY_COLORS[p.city];
   return null;
+}
+
+function slugForPlaceName(name) {
+  if (!name) return null;
+  const lower = name.trim().toLowerCase();
+  const hit = allPlacesForItin.find((p) => p.name.toLowerCase() === lower);
+  return hit ? hit.slug : null;
+}
+
+function transitTitleFromFields(mode, fromLabel, toLabel) {
+  const m = TRANSIT_MODE_MAP[mode];
+  const modeLabel = m ? m.label : "Transit";
+  if (fromLabel && toLabel) return `${modeLabel}: ${fromLabel} → ${toLabel}`;
+  if (toLabel) return `${modeLabel} to ${toLabel}`;
+  if (fromLabel) return `${modeLabel} from ${fromLabel}`;
+  return modeLabel;
+}
+
+function transitDurationMin(dep, arr) {
+  if (!dep || !arr) return null;
+  const m = /^(\d{1,2}):(\d{2})$/;
+  const d = dep.match(m), a = arr.match(m);
+  if (!d || !a) return null;
+  const dMin = Number(d[1]) * 60 + Number(d[2]);
+  const aMin = Number(a[1]) * 60 + Number(a[2]);
+  let diff = aMin - dMin;
+  if (diff < 0) diff += 24 * 60;
+  return diff;
+}
+
+function formatDurationMin(min) {
+  if (min == null || min <= 0) return "";
+  if (min < 60) return `${min}m`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
+}
+
+function formatTransitTimeRange(dep, arr) {
+  const m = /^\d{1,2}:\d{2}$/;
+  const validDep = m.test(dep || "") ? dep : "";
+  const validArr = m.test(arr || "") ? arr : "";
+  if (!validDep && !validArr) return "";
+  if (validDep && validArr) {
+    const dur = transitDurationMin(validDep, validArr);
+    const durStr = dur ? ` <span class="board-transit-dur">(${formatDurationMin(dur)})</span>` : "";
+    return `${escapeHtml(validDep)} → ${escapeHtml(validArr)}${durStr}`;
+  }
+  if (validDep) return `dep ${escapeHtml(validDep)}`;
+  return `arr ${escapeHtml(validArr)}`;
+}
+
+function buildTransitMetaLine(entry) {
+  const parts = [];
+  if (entry.line) parts.push(escapeHtml(entry.line));
+  const time = formatTransitTimeRange(entry.departTime, entry.arriveTime);
+  if (time) parts.push(time);
+  return parts.length ? parts.join(' <span class="board-transit-dot">·</span> ') : "";
 }
 
 function groupEntriesByDay(entries) {
@@ -860,25 +1102,56 @@ function buildBoardShell() {
   board.dataset.built = "1";
   board.innerHTML = "";
 
+  const main = el("div", "board-main");
+  main.appendChild(buildIdeasPanel());
+
   const daysStrip = el("div", "board-days-strip");
   for (let d = 1; d <= DAY_COUNT; d++) {
     daysStrip.appendChild(buildDayColumn(d));
   }
-  board.appendChild(daysStrip);
+  main.appendChild(daysStrip);
 
-  board.appendChild(buildIdeasPanel());
+  board.appendChild(main);
+  board.appendChild(buildMapPanel());
+}
+
+function buildMapPanel() {
+  const panel = el("div", "board-map-panel");
+  panel.dataset.collapsed = "true";
+  panel.innerHTML = `
+    <div class="board-map-bar">
+      <span class="board-map-bar-text" data-map-status>📍 Click a day column to focus the map</span>
+      <button type="button" class="board-map-close" data-map-close title="Unpin day">×</button>
+    </div>
+    <div class="board-map-body">
+      <div class="board-map-empty" data-map-empty>This day has no places yet — drop one from Ideas to plot it.</div>
+      <div id="itinerary-map" data-map-host></div>
+    </div>
+  `;
+  panel.querySelector("[data-map-close]").addEventListener("click", () => {
+    setActiveDay(null);
+  });
+  return panel;
 }
 
 function buildDayColumn(dayNum) {
   const col = el("section", "board-col board-col-day");
   col.dataset.key = `day-${dayNum}`;
+  col.dataset.day = String(dayNum);
 
-  const head = el("div", "board-col-head");
+  const head = el("button", "board-col-head");
+  head.type = "button";
+  head.dataset.day = String(dayNum);
+  head.title = "Click to focus the map on this day";
   head.innerHTML = `
     <span class="board-col-day-num">Day ${dayNum}</span>
     <span class="board-col-day-date">${escapeHtml(formatDayDate(dayNum))}</span>
     <span class="board-col-count" data-count></span>
+    <span class="board-col-pin" aria-hidden="true">📍</span>
   `;
+  head.addEventListener("click", () => {
+    setActiveDay(boardState.activeDay === dayNum ? null : dayNum);
+  });
   col.appendChild(head);
 
   const titleInput = document.createElement("input");
@@ -1024,22 +1297,223 @@ function reconcileBoard() {
     if (entries.length === 0) {
       list.appendChild(el("div", "board-col-empty", "Drop here"));
     }
-    for (const entry of entries) {
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
       const editing = user && boardState.editingId === entry.id;
       list.appendChild(
         editing ? renderCardEditor(entry) : renderCard(entry, user)
       );
+      const next = entries[i + 1];
+      if (next) {
+        const seg = renderDistanceSegment(entry, next);
+        if (seg) list.appendChild(seg);
+      }
     }
 
     const col = list.closest(".board-col");
     const countSlot = col.querySelector("[data-count]");
     if (countSlot) countSlot.textContent = entries.length ? `· ${entries.length}` : "";
+    col.classList.toggle("is-pinned", boardState.activeDay === d);
 
     ensureDaySortable(list, canDrag);
   }
 
   renderPalette();
   updateAuthAffordances(user);
+  renderMiniMap();
+}
+
+function renderDistanceSegment(prev, next) {
+  const prevPlace = placeFor(prev.placeSlug);
+  const nextPlace = placeFor(next.placeSlug);
+  if (!prevPlace?.coords || !nextPlace?.coords) return null;
+
+  const info = walkInfoForPair(
+    prev.placeSlug,
+    next.placeSlug,
+    prevPlace.coords,
+    nextPlace.coords
+  );
+  if (!info) return null;
+
+  const km = info.hKm != null ? info.hKm : info.meters / 1000;
+  const seg = el("div", "board-seg");
+
+  if (km > WALK_MAX_KM) {
+    const a = document.createElement("a");
+    a.className = "board-seg-link";
+    a.href = `https://www.google.com/maps/dir/?api=1&origin=${prevPlace.coords[0]},${prevPlace.coords[1]}&destination=${nextPlace.coords[0]},${nextPlace.coords[1]}&travelmode=transit`;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.textContent = `📍 ${km < 10 ? km.toFixed(1) : Math.round(km)} km · directions ↗`;
+    a.addEventListener("mousedown", (ev) => ev.stopPropagation());
+    seg.appendChild(a);
+  } else {
+    const minutes = Math.max(1, Math.round(info.walkSec / 60));
+    const meters = info.meters;
+    const distLabel =
+      meters >= 1000 ? `${(meters / 1000).toFixed(1)} km` : `${meters} m`;
+    const span = el("span", "board-seg-walk", `🚶 ${minutes} min · ${distLabel}`);
+    if (info.source === "computed") span.title = "Estimated from straight-line distance";
+    seg.appendChild(span);
+  }
+  return seg;
+}
+
+function setActiveDay(dayNum) {
+  if (dayNum === boardState.activeDay) return;
+  boardState.activeDay = dayNum;
+  const panel = document.querySelector(".board-map-panel");
+  if (panel) panel.dataset.collapsed = dayNum == null ? "true" : "false";
+  for (const col of document.querySelectorAll(".board-col-day")) {
+    col.classList.toggle(
+      "is-pinned",
+      Number(col.dataset.day) === dayNum
+    );
+  }
+  renderMiniMap();
+  renderPalette();
+}
+
+function ensureMiniMap() {
+  if (typeof L === "undefined") return null;
+  if (boardState.miniMap) return boardState.miniMap;
+  const host = document.getElementById("itinerary-map");
+  if (!host) return null;
+  const map = L.map(host, {
+    scrollWheelZoom: true,
+    zoomControl: true,
+    attributionControl: false,
+  }).setView([36, 137], 5);
+  L.tileLayer(
+    "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+    {
+      attribution:
+        '© <a href="https://www.openstreetmap.org/copyright">OSM</a>, © <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: "abcd",
+      maxZoom: 19,
+    }
+  ).addTo(map);
+  L.control.attribution({ prefix: false }).addTo(map);
+  boardState.miniMap = map;
+  boardState.miniMapLayers = L.layerGroup().addTo(map);
+  return map;
+}
+
+function numberedDivIcon(n, color, highlight) {
+  const cls = "board-map-pin" + (highlight ? " is-active" : "");
+  return L.divIcon({
+    className: "board-map-pin-icon",
+    html: `<span class="${cls}" style="--pin-color:${color}">${n}</span>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 28],
+  });
+}
+
+function renderMiniMap() {
+  const panel = document.querySelector(".board-map-panel");
+  if (!panel) return;
+  const status = panel.querySelector("[data-map-status]");
+  const empty = panel.querySelector("[data-map-empty]");
+  const host = panel.querySelector("[data-map-host]");
+  const day = boardState.activeDay;
+  boardState.pinByEntryId = new Map();
+
+  if (day == null) {
+    panel.dataset.collapsed = "true";
+    if (status) status.textContent = "📍 Click a day column to focus the map";
+    if (host) host.style.display = "none";
+    if (empty) empty.style.display = "none";
+    return;
+  }
+
+  panel.dataset.collapsed = "false";
+  const entries = (groupEntriesByDay(boardState.entries).get(day) || []).filter(
+    (e) => {
+      const p = placeFor(e.placeSlug);
+      return p && Array.isArray(p.coords);
+    }
+  );
+  const titleText = boardState.dayTitles[String(day)];
+  const label = titleText
+    ? `Day ${day} · ${titleText}`
+    : `Day ${day} · ${formatDayDate(day)}`;
+  if (status) {
+    status.textContent =
+      entries.length === 0
+        ? `${label} — no places yet`
+        : `${label} — ${entries.length} stop${entries.length > 1 ? "s" : ""}`;
+  }
+
+  if (entries.length === 0) {
+    if (host) host.style.display = "none";
+    if (empty) empty.style.display = "flex";
+    return;
+  }
+  if (host) host.style.display = "block";
+  if (empty) empty.style.display = "none";
+
+  const map = ensureMiniMap();
+  if (!map) return;
+  boardState.miniMapLayers.clearLayers();
+
+  const points = [];
+  entries.forEach((entry, i) => {
+    const place = placeFor(entry.placeSlug);
+    const color = CITY_COLORS[place.city] || "#444";
+    const marker = L.marker(place.coords, {
+      icon: numberedDivIcon(i + 1, color, false),
+    });
+    marker.entryId = entry.id;
+    marker.bindTooltip(`${i + 1}. ${entry.title}`, { direction: "top", offset: [0, -22] });
+    marker.on("click", () => focusCardForEntry(entry.id));
+    boardState.miniMapLayers.addLayer(marker);
+    boardState.pinByEntryId.set(entry.id, marker);
+    points.push(place.coords);
+  });
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[i];
+    const b = points[i + 1];
+    const km = haversineKm(a, b);
+    const dashed = km > WALK_MAX_KM;
+    L.polyline([a, b], {
+      color: "#666",
+      weight: 3,
+      opacity: 0.7,
+      dashArray: dashed ? "6 6" : null,
+    }).addTo(boardState.miniMapLayers);
+  }
+
+  const bounds = L.latLngBounds(points).pad(0.2);
+  // Panel height transitions over ~180ms; defer size + bounds until it settles.
+  setTimeout(() => {
+    map.invalidateSize();
+    map.fitBounds(bounds, { animate: true, maxZoom: 16 });
+  }, 220);
+}
+
+function pulsePin(entryId) {
+  const marker = boardState.pinByEntryId.get(entryId);
+  if (!marker) return;
+  const map = boardState.miniMap;
+  if (map) map.panTo(marker.getLatLng(), { animate: true });
+  const icon = marker._icon;
+  if (icon) {
+    icon.classList.add("is-pulsing");
+    setTimeout(() => icon.classList.remove("is-pulsing"), 900);
+  }
+}
+
+function focusCardForEntry(entryId) {
+  const card = document.querySelector(`.board-card[data-id="${entryId}"]`);
+  if (!card) return;
+  card.scrollIntoView({ block: "center", behavior: "smooth" });
+  card.classList.add("is-pulsing");
+  clearTimeout(boardState.pulseTimer);
+  boardState.pulseTimer = setTimeout(() => {
+    card.classList.remove("is-pulsing");
+  }, 900);
 }
 
 function usedSlugDayMap(entries) {
@@ -1053,29 +1527,76 @@ function usedSlugDayMap(entries) {
   return m;
 }
 
+function activeDayProximityContext() {
+  const day = boardState.activeDay;
+  if (day == null) return null;
+  const entries = (groupEntriesByDay(boardState.entries).get(day) || []);
+  const anchors = [];
+  const cities = new Set();
+  for (const e of entries) {
+    const p = placeFor(e.placeSlug);
+    if (!p) continue;
+    cities.add(p.city);
+    if (Array.isArray(p.coords)) anchors.push(p.coords);
+  }
+  if (anchors.length === 0 && cities.size === 0) return null;
+  return { anchors, cities };
+}
+
+function proximityTierFor(place, ctx) {
+  if (!ctx) return null;
+  if (!ctx.cities.has(place.city)) return "far";
+  if (!Array.isArray(place.coords) || ctx.anchors.length === 0) return "near";
+  let minKm = Infinity;
+  for (const a of ctx.anchors) {
+    const km = haversineKm(a, place.coords);
+    if (km < minKm) minKm = km;
+  }
+  if (minKm <= NEAR_KM) return "near";
+  if (minKm <= MID_KM) return "mid";
+  return "far";
+}
+
 function renderPalette() {
   const list = document.querySelector('.board-ideas-list[data-day="palette"]');
   if (!list) return;
   list.innerHTML = "";
   const usedMap = usedSlugDayMap(boardState.entries);
   const filtered = allPlacesForItin.filter((p) => paletteMatches(p, boardState.paletteQuery));
-  const free = filtered.filter((p) => !usedMap.has(p.slug));
+  const proxCtx = activeDayProximityContext();
+  const tieredFree = filtered
+    .filter((p) => !usedMap.has(p.slug))
+    .map((p) => ({ p, tier: proximityTierFor(p, proxCtx) }));
+  // Sort by tier so "near" floats to the top when a day is pinned.
+  if (proxCtx) {
+    const order = { near: 0, mid: 1, far: 2 };
+    tieredFree.sort((a, b) => (order[a.tier] ?? 0) - (order[b.tier] ?? 0));
+  }
   const used = filtered.filter((p) => usedMap.has(p.slug));
-  for (const p of free) list.appendChild(renderPaletteCard(p, undefined));
-  for (const p of used) list.appendChild(renderPaletteCard(p, usedMap.get(p.slug)));
+  for (const { p, tier } of tieredFree) {
+    list.appendChild(renderPaletteCard(p, undefined, tier));
+  }
+  for (const p of used) list.appendChild(renderPaletteCard(p, usedMap.get(p.slug), null));
   if (filtered.length === 0) {
     list.appendChild(el("div", "board-palette-empty", "No matches — try a different tag or name."));
   }
   const countSlot = document.querySelector("[data-ideas-count]");
   if (countSlot) {
-    countSlot.textContent = `${free.length} free · ${filtered.length} shown`;
+    if (proxCtx) {
+      const near = tieredFree.filter((t) => t.tier === "near").length;
+      countSlot.textContent = `${near} near · ${tieredFree.length} free · ${filtered.length} shown`;
+    } else {
+      countSlot.textContent = `${tieredFree.length} free · ${filtered.length} shown`;
+    }
   }
   ensurePaletteSortable(list, !!window.Trip?.currentUser);
 }
 
-function renderPaletteCard(place, usedOnDay) {
+function renderPaletteCard(place, usedOnDay, proxTier) {
   const card = el("article", "board-card board-palette-card");
   card.dataset.placeSlug = place.slug;
+  if (proxTier === "mid") card.classList.add("board-palette-mid");
+  if (proxTier === "far") card.classList.add("board-palette-far");
   const color = CITY_COLORS[place.city];
   if (color) card.style.setProperty("--stripe", color);
 
@@ -1275,11 +1796,23 @@ function computeOrderFromDom(list, droppedEl) {
 function renderCard(entry, user) {
   const card = el("article", "board-card");
   card.dataset.id = entry.id;
+  card.dataset.day = String(entry.day);
   card.dataset.order = String(typeof entry.order === "number" ? entry.order : 0);
 
   const stripe = entryStripeColor(entry);
   if (stripe) card.style.setProperty("--stripe", stripe);
   else card.classList.add("board-card-plain");
+
+  card.addEventListener("click", (ev) => {
+    if (ev.target.closest("a, button, input, textarea")) return;
+    const day = Number(entry.day);
+    if (boardState.activeDay !== day) {
+      setActiveDay(day);
+      setTimeout(() => pulsePin(entry.id), 80);
+    } else {
+      pulsePin(entry.id);
+    }
+  });
 
   const head = el("div", "board-card-head");
   head.innerHTML = `<span class="board-card-emoji">${escapeHtml(entryEmoji(entry))}</span>`;

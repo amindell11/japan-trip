@@ -839,6 +839,87 @@ body[data-view="detail"] main { max-width: 960px; }
 }
 .stays-sub .muted { margin-left: 0.5rem; font-variant-numeric: tabular-nums; }
 
+.stays-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.stays-controls-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stays-count-seg {
+  display: inline-flex;
+  background: #eee;
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.stays-count-btn {
+  border: 0;
+  background: transparent;
+  padding: 0.3rem 0.85rem;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.stays-count-btn.active {
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.stays-count-btn:hover:not(.active) { color: var(--fg); }
+
+.stays-extlinks {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.stays-extlinks-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stays-extlink {
+  font-size: 0.78rem;
+  padding: 0.25rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--fg);
+  text-decoration: none;
+  background: var(--surface);
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.stays-extlink:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.stays-leg-more {
+  margin: 0.8rem 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
 .stays-leg {
   margin: 2rem 0 2.5rem;
 }
@@ -1114,13 +1195,49 @@ body[data-view="detail"] main { max-width: 960px; }
 .board-col-day {
   flex: 0 0 230px;
   scroll-snap-align: start;
-  max-height: 520px;
+  align-self: stretch;
+  max-height: 100%;
 }
 
 .board-col-head {
   display: flex;
   align-items: baseline;
   gap: 0.45rem;
+  background: none;
+  border: 0;
+  padding: 0.15rem 0.25rem;
+  border-radius: 8px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  transition: background 0.12s, box-shadow 0.12s;
+}
+
+.board-col-head:hover {
+  background: rgba(0, 0, 0, 0.035);
+}
+
+.board-col-pin {
+  margin-left: 0.15rem;
+  opacity: 0;
+  font-size: 0.85rem;
+  transition: opacity 0.15s;
+}
+
+.board-col-day.is-pinned .board-col-head {
+  background: rgba(214, 69, 69, 0.08);
+}
+
+.board-col-day.is-pinned .board-col-pin {
+  opacity: 1;
+}
+
+.board-col-day.is-pinned {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 16px;
 }
 
 .board-col-day-num {
@@ -1801,4 +1918,246 @@ a.board-card-title-link:hover { text-decoration: underline; }
   .board-card-actions { opacity: 1; }
   .board-ideas-list { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
   .board-popover { display: none !important; }
+}
+
+/* ==========================================================================
+   Itinerary tab layout: ideas-left sidebar + days-right + sticky bottom map
+   ========================================================================== */
+
+body[data-view="itinerary"] main {
+  max-width: none;
+  padding: 0.6rem 0.85rem 0;
+}
+
+body[data-view="itinerary"] #itinerary-view {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 84px);
+}
+
+body[data-view="itinerary"] #itinerary-board {
+  flex: 1;
+  min-height: 0;
+  gap: 0.7rem;
+}
+
+.board-main {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 0.85rem;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Ideas as a vertical sidebar */
+body[data-view="itinerary"] .board-ideas {
+  align-self: stretch;
+  overflow-y: auto;
+  max-height: 100%;
+  padding: 0.85rem 0.9rem 0.8rem;
+}
+
+body[data-view="itinerary"] .board-ideas-head {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.45rem;
+}
+
+body[data-view="itinerary"] .board-ideas-list {
+  grid-template-columns: 1fr;
+  max-height: none;
+  overflow-y: visible;
+  padding-right: 0;
+}
+
+body[data-view="itinerary"] .board-days-strip {
+  align-self: stretch;
+  min-height: 0;
+  margin: 0;
+  padding-bottom: 0.6rem;
+}
+
+/* Sticky bottom map panel */
+.board-map-panel {
+  flex: 0 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: height 0.18s ease;
+}
+
+.board-map-panel[data-collapsed="true"] { height: 38px; }
+.board-map-panel[data-collapsed="false"] {
+  height: 38vh;
+  min-height: 280px;
+}
+
+.board-map-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  border-bottom: 1px solid transparent;
+  flex: 0 0 auto;
+}
+
+.board-map-panel[data-collapsed="false"] .board-map-bar {
+  border-bottom-color: var(--border);
+  color: var(--fg);
+  font-weight: 500;
+}
+
+.board-map-bar-text {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.board-map-close {
+  background: none;
+  border: 0;
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 0.1rem 0.45rem;
+  border-radius: 6px;
+  display: none;
+}
+
+.board-map-panel[data-collapsed="false"] .board-map-close { display: inline-flex; }
+.board-map-close:hover { background: #f0e9e0; color: var(--fg); }
+
+.board-map-body {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+}
+
+.board-map-panel[data-collapsed="true"] .board-map-body { display: none; }
+
+#itinerary-map {
+  width: 100%;
+  height: 100%;
+}
+
+.board-map-empty {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: #faf6ef;
+  color: var(--muted);
+  font-style: italic;
+  font-size: 0.92rem;
+  padding: 1rem;
+  text-align: center;
+}
+
+/* Numbered map pins */
+.board-map-pin-icon {
+  background: transparent;
+  border: 0;
+}
+
+.board-map-pin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--pin-color, #444);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  transform: translate(0, -8px);
+  cursor: pointer;
+}
+
+.board-map-pin.is-pulsing {
+  animation: board-map-pin-pulse 0.85s ease-out;
+}
+
+@keyframes board-map-pin-pulse {
+  0% {
+    transform: translate(0, -8px) scale(1);
+    box-shadow: 0 0 0 0 rgba(214, 69, 69, 0.55);
+  }
+  50% {
+    transform: translate(0, -10px) scale(1.22);
+    box-shadow: 0 0 0 12px rgba(214, 69, 69, 0);
+  }
+  100% {
+    transform: translate(0, -8px) scale(1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  }
+}
+
+/* Inline distance row between cards */
+.board-seg {
+  display: flex;
+  justify-content: center;
+  padding: 0.05rem 0.3rem;
+  font-size: 0.74rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  pointer-events: auto;
+  user-select: none;
+}
+
+.board-seg-walk { letter-spacing: -0.005em; }
+
+.board-seg-link {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.board-seg-link:hover { text-decoration: underline; }
+
+/* Card pulse highlight when paired pin is clicked */
+.board-card.is-pulsing {
+  animation: board-card-pulse 0.85s ease-out;
+}
+
+@keyframes board-card-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(214, 69, 69, 0.55); }
+  50% { box-shadow: 0 0 0 10px rgba(214, 69, 69, 0); }
+  100% { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04); }
+}
+
+/* Palette proximity dimming when a day is pinned */
+.board-palette-mid { opacity: 0.55; }
+.board-palette-far { opacity: 0.28; }
+.board-palette-mid:hover,
+.board-palette-far:hover { opacity: 1; }
+
+/* Mobile: stack ideas above days, abandon fixed-height layout */
+@media (max-width: 720px) {
+  body[data-view="itinerary"] #itinerary-view {
+    height: auto;
+  }
+  .board-main {
+    grid-template-columns: 1fr;
+  }
+  body[data-view="itinerary"] .board-ideas {
+    max-height: 280px;
+  }
+  body[data-view="itinerary"] .board-ideas-list {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+  .board-map-panel[data-collapsed="false"] {
+    height: 50vh;
+  }
 }
