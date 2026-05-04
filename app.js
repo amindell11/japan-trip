@@ -689,6 +689,7 @@ const sortables = new Map();
 
 function initItinerary() {
   buildBoardShell();
+  setupBoardPopover();
 
   if (window.Trip?.configured) {
     window.Trip.subscribeItinerary((entries) => {
@@ -934,6 +935,7 @@ function reconcileBoard() {
     boardState.pendingReconcile = true;
     return;
   }
+  hidePopover();
   const byDay = groupEntriesByDay(boardState.entries);
   const user = window.Trip?.currentUser;
   const canDrag = !!user;
@@ -1077,6 +1079,7 @@ function ensureDaySortable(list, enabled) {
     touchStartThreshold: 6,
     onStart: () => {
       boardState.dragging = true;
+      hidePopover();
     },
     onEnd: async (evt) => {
       boardState.dragging = false;
@@ -1113,6 +1116,7 @@ function ensurePaletteSortable(list, enabled) {
     touchStartThreshold: 6,
     onStart: () => {
       boardState.dragging = true;
+      hidePopover();
     },
     onEnd: async (evt) => {
       boardState.dragging = false;
@@ -1368,4 +1372,225 @@ function renderCardEditor(entry) {
   });
 
   return card;
+}
+
+/* ---------- Card hover popover ---------- */
+
+const popoverState = {
+  el: null,
+  showTimer: null,
+  hideTimer: null,
+  currentCard: null,
+  showDelay: 260,
+  hideDelay: 100,
+};
+
+function ensurePopoverEl() {
+  if (popoverState.el) return popoverState.el;
+  const pop = document.createElement("div");
+  pop.className = "board-popover";
+  pop.setAttribute("role", "tooltip");
+  pop.style.display = "none";
+  pop.addEventListener("mouseenter", () => {
+    clearTimeout(popoverState.hideTimer);
+    popoverState.hideTimer = null;
+  });
+  pop.addEventListener("mouseleave", () => schedulePopoverHide());
+  document.body.appendChild(pop);
+  popoverState.el = pop;
+  return pop;
+}
+
+function hidePopover() {
+  clearTimeout(popoverState.showTimer);
+  clearTimeout(popoverState.hideTimer);
+  popoverState.showTimer = null;
+  popoverState.hideTimer = null;
+  if (popoverState.el) popoverState.el.style.display = "none";
+  popoverState.currentCard = null;
+}
+
+function schedulePopoverHide() {
+  clearTimeout(popoverState.hideTimer);
+  popoverState.hideTimer = setTimeout(hidePopover, popoverState.hideDelay);
+}
+
+function popoverHTMLForCard(card) {
+  const paletteSlug = card.dataset.placeSlug;
+  let placeSlug = paletteSlug || null;
+  let entry = null;
+  if (!placeSlug && card.dataset.id) {
+    entry = boardState.entries.find((e) => e.id === card.dataset.id);
+    if (entry) placeSlug = entry.placeSlug || null;
+  }
+
+  const hit = placeSlug && TRIP_DATA ? findPlaceBySlug(TRIP_DATA, placeSlug) : null;
+  const place = hit ? hit.place : null;
+
+  if (!place) {
+    if (!entry) return null;
+    const hasNotes = entry.notes && entry.notes.trim();
+    const hasTickets = (entry.tickets || []).some((t) => t && t.url);
+    if (!hasNotes && !hasTickets) return null;
+    const ticketRow = (entry.tickets || [])
+      .filter((t) => t && t.url)
+      .map(
+        (t) =>
+          `<a href="${escapeHtml(t.url)}" target="_blank" rel="noopener">${escapeHtml(
+            t.label || "Link"
+          )}</a>`
+      )
+      .join("");
+    return `
+      <div class="board-popover-head">
+        <span class="board-popover-emoji">${escapeHtml(entryEmoji(entry))}</span>
+        <div class="board-popover-title-wrap">
+          <span class="board-popover-title">${escapeHtml(entry.title || "Untitled")}</span>
+          <span class="board-popover-sub">Day ${entry.day} · custom note</span>
+        </div>
+      </div>
+      ${hasNotes ? `<p class="board-popover-summary">${escapeHtml(entry.notes)}</p>` : ""}
+      ${ticketRow ? `<div class="board-popover-links">${ticketRow}</div>` : ""}
+    `;
+  }
+
+  const sectionName = hit?.section?.name || "";
+  const groupName = hit?.group?.name || "";
+  const breadcrumb = [sectionName, groupName].filter(Boolean).map(escapeHtml).join(" · ");
+
+  const tagRow = (place.tags || [])
+    .map((t) => `<span class="board-popover-tag">${escapeHtml(t)}</span>`)
+    .join("");
+
+  const refLinks = [];
+  if (place.wiki) {
+    refLinks.push({
+      label: "Wikipedia",
+      url: `https://en.wikipedia.org/wiki/${encodeURIComponent(place.wiki)}`,
+    });
+  }
+  if (place.coords) {
+    const [lat, lng] = place.coords;
+    refLinks.push({
+      label: "Google Maps",
+      url: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
+    });
+  } else {
+    refLinks.push({
+      label: "Google Maps",
+      url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        place.name + " Japan"
+      )}`,
+    });
+  }
+
+  const allLinks = (place.links || []).concat(refLinks);
+  const linkRow = allLinks
+    .map(
+      (l) =>
+        `<a href="${escapeHtml(l.url)}" target="_blank" rel="noopener">${escapeHtml(l.label)}</a>`
+    )
+    .join("");
+
+  const slug = slugify(place.name);
+  const entryNote = entry?.notes?.trim();
+
+  return `
+    <div class="board-popover-head">
+      <span class="board-popover-emoji">${escapeHtml(iconFor(place))}</span>
+      <div class="board-popover-title-wrap">
+        <span class="board-popover-title">${escapeHtml(place.name)}</span>
+        ${breadcrumb ? `<span class="board-popover-sub">${breadcrumb}</span>` : ""}
+      </div>
+    </div>
+    ${place.travel ? `<p class="board-popover-travel">🚆 ${escapeHtml(place.travel)}</p>` : ""}
+    ${place.summary ? `<p class="board-popover-summary">${escapeHtml(place.summary)}</p>` : ""}
+    ${entryNote ? `<p class="board-popover-notes">${escapeHtml(entryNote)}</p>` : ""}
+    ${tagRow ? `<div class="board-popover-tags">${tagRow}</div>` : ""}
+    ${linkRow ? `<div class="board-popover-links">${linkRow}</div>` : ""}
+    <a class="board-popover-more" href="place.html?slug=${encodeURIComponent(slug)}">View full details →</a>
+  `;
+}
+
+function positionPopover(card, pop) {
+  const margin = 8;
+  const overlap = 4;
+  const cardRect = card.getBoundingClientRect();
+  const popRect = pop.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  let left = cardRect.right - overlap;
+  if (left + popRect.width + margin > vw) {
+    const leftSide = cardRect.left - popRect.width + overlap;
+    if (leftSide >= margin) {
+      left = leftSide;
+    } else {
+      left = Math.max(margin, vw - popRect.width - margin);
+    }
+  }
+
+  let top = cardRect.top;
+  if (top + popRect.height + margin > vh) {
+    top = Math.max(margin, vh - popRect.height - margin);
+  }
+  if (top < margin) top = margin;
+
+  pop.style.left = `${Math.round(left)}px`;
+  pop.style.top = `${Math.round(top)}px`;
+}
+
+function showPopoverFor(card) {
+  if (boardState.dragging) return;
+  if (card.classList.contains("board-card-editing")) return;
+  const html = popoverHTMLForCard(card);
+  if (!html) return;
+  const pop = ensurePopoverEl();
+  pop.innerHTML = html;
+  pop.style.display = "block";
+  pop.style.left = "-9999px";
+  pop.style.top = "-9999px";
+  requestAnimationFrame(() => positionPopover(card, pop));
+}
+
+function setupBoardPopover() {
+  const board = document.getElementById("itinerary-board");
+  if (!board || board.dataset.popoverWired === "1") return;
+  board.dataset.popoverWired = "1";
+
+  board.addEventListener("mouseover", (ev) => {
+    const card = ev.target.closest(".board-card");
+    if (!card || !board.contains(card)) return;
+    if (popoverState.currentCard === card) {
+      clearTimeout(popoverState.hideTimer);
+      popoverState.hideTimer = null;
+      return;
+    }
+    if (popoverState.el && popoverState.el.style.display === "block") {
+      popoverState.el.style.display = "none";
+    }
+    popoverState.currentCard = card;
+    clearTimeout(popoverState.showTimer);
+    clearTimeout(popoverState.hideTimer);
+    popoverState.hideTimer = null;
+    popoverState.showTimer = setTimeout(() => {
+      if (popoverState.currentCard === card) showPopoverFor(card);
+    }, popoverState.showDelay);
+  });
+
+  board.addEventListener("mouseout", (ev) => {
+    const card = ev.target.closest(".board-card");
+    if (!card) return;
+    const to = ev.relatedTarget;
+    if (to && (card.contains(to) || (popoverState.el && popoverState.el.contains(to)))) return;
+    if (popoverState.currentCard === card) {
+      clearTimeout(popoverState.showTimer);
+      popoverState.showTimer = null;
+      schedulePopoverHide();
+      popoverState.currentCard = null;
+    }
+  });
+
+  window.addEventListener("scroll", hidePopover, true);
+  window.addEventListener("resize", hidePopover);
 }
