@@ -839,6 +839,23 @@ const TRANSIT_MODES = [
 ];
 const TRANSIT_MODE_MAP = Object.fromEntries(TRANSIT_MODES.map((m) => [m.value, m]));
 
+// Curated transit nodes — airports, major stations, common destinations —
+// merged with the place catalog to seed the From/To autocomplete before any
+// live Nominatim results arrive.
+const COMMON_TRANSIT_NODES = [
+  "Narita Airport", "Haneda Airport", "Kansai International Airport (KIX)", "Itami Airport",
+  "Tokyo Station", "Shinjuku Station", "Shibuya Station", "Shinagawa Station",
+  "Ueno Station", "Akihabara Station", "Asakusa Station", "Ikebukuro Station",
+  "Kyoto Station", "Osaka Station", "Shin-Osaka Station", "Namba Station",
+  "Nagoya Station", "Hiroshima Station", "Sannomiya Station", "Kobe Station",
+  "Nara Station", "Kintetsu-Nara Station", "Yokohama Station", "Sapporo Station",
+  "Hakata Station (Fukuoka)", "Kanazawa Station", "Sendai Station", "Niigata Station",
+  "Kawaguchiko Station", "Mishima Station", "Atami Station", "Hakone-Yumoto Station",
+  "Karuizawa Station", "Busta Shinjuku (Expressway Bus Terminal)",
+  "Tokyo", "Kyoto", "Osaka", "Nara", "Hakone", "Nikko", "Kamakura", "Yokohama",
+  "Kobe", "Hiroshima", "Miyajima", "Kanazawa", "Sapporo", "Fukuoka",
+];
+
 // Auto-migration recipes for transit-shaped entries that pre-date the transit
 // card type. Keyed by exact title. Idempotent — only applied to entries whose
 // `kind` field is unset.
@@ -1028,11 +1045,119 @@ function slugForPlaceName(name) {
 
 function transitTitleFromFields(mode, fromLabel, toLabel) {
   const m = TRANSIT_MODE_MAP[mode];
-  const modeLabel = m ? m.label : "Transit";
+  const modeLabel = m
+    ? m.label
+    : mode
+    ? mode.charAt(0).toUpperCase() + mode.slice(1)
+    : "Transit";
   if (fromLabel && toLabel) return `${modeLabel}: ${fromLabel} → ${toLabel}`;
   if (toLabel) return `${modeLabel} to ${toLabel}`;
   if (fromLabel) return `${modeLabel} from ${fromLabel}`;
   return modeLabel;
+}
+
+// Resolve a typed mode string into a canonical mode value (one of the 8
+// known modes when matched, or the raw lowercased text otherwise).
+function parseTransitMode(typed) {
+  const raw = (typed || "").trim();
+  if (!raw) return "train";
+  const lower = raw.toLowerCase();
+  if (TRANSIT_MODE_MAP[lower]) return lower;
+  for (const m of TRANSIT_MODES) {
+    if (m.label.toLowerCase() === lower) return m.value;
+    const parts = m.label.toLowerCase().split(/\s*\/\s*/);
+    if (parts.includes(lower)) return m.value;
+  }
+  for (const m of TRANSIT_MODES) {
+    if (m.label.toLowerCase().includes(lower)) return m.value;
+  }
+  return lower;
+}
+
+function modeDisplayLabel(mode) {
+  const m = TRANSIT_MODE_MAP[mode];
+  if (m) return m.label;
+  if (!mode) return "";
+  return mode.charAt(0).toUpperCase() + mode.slice(1);
+}
+
+// ---- Live location suggestions via OpenStreetMap Nominatim ----
+// Free, CORS-enabled, ~1 req/sec rate limit. Debounced + cached so typing
+// a query stays well under the budget.
+
+const NOMINATIM_ENDPOINT = "https://nominatim.openstreetmap.org/search";
+const nominatimCache = new Map();
+
+async function fetchNominatimSuggestions(query) {
+  const q = (query || "").trim();
+  if (q.length < 3) return [];
+  if (nominatimCache.has(q)) return nominatimCache.get(q);
+  const params = new URLSearchParams({
+    q,
+    format: "json",
+    limit: "6",
+    "accept-language": "en",
+  });
+  try {
+    const res = await fetch(`${NOMINATIM_ENDPOINT}?${params.toString()}`);
+    if (!res.ok) {
+      nominatimCache.set(q, []);
+      return [];
+    }
+    const data = await res.json();
+    const out = (Array.isArray(data) ? data : [])
+      .map((d) => shortenNominatimLabel(d.display_name))
+      .filter(Boolean);
+    nominatimCache.set(q, out);
+    return out;
+  } catch {
+    nominatimCache.set(q, []);
+    return [];
+  }
+}
+
+function shortenNominatimLabel(displayName) {
+  if (!displayName) return "";
+  const parts = displayName.split(",").map((p) => p.trim()).filter(Boolean);
+  if (parts.length === 0) return displayName.slice(0, 80);
+  let label = parts[0];
+  if (label.length < 25 && parts.length > 1) label += ", " + parts[1];
+  return label.slice(0, 80);
+}
+
+// Wire an input to push its typed query into a datalist with: catalog
+// places + curated transit nodes + live Nominatim results. Debounced.
+function attachLocationSuggest(input, datalist, baseOptions) {
+  const renderOptions = (opts) => {
+    const seen = new Set();
+    const html = [];
+    for (const v of opts) {
+      const key = v.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      html.push(`<option value="${escapeHtml(v)}"></option>`);
+    }
+    datalist.innerHTML = html.join("");
+  };
+  renderOptions(baseOptions);
+
+  let timer = null;
+  let lastQuery = "";
+  input.addEventListener("input", () => {
+    const q = input.value.trim();
+    if (q === lastQuery) return;
+    lastQuery = q;
+    clearTimeout(timer);
+    if (q.length < 3) {
+      renderOptions(baseOptions);
+      return;
+    }
+    timer = setTimeout(async () => {
+      const live = await fetchNominatimSuggestions(q);
+      if (input.value.trim() !== q) return; // user moved on
+      renderOptions([...live, ...baseOptions]);
+    }, 350);
+  });
 }
 
 function transitDurationMin(dep, arr) {
@@ -2143,25 +2268,23 @@ function renderTransitCardEditor(entry) {
   }));
   if (tickets.length === 0) tickets.push({ label: "", url: "" });
 
-  const datalistId = `transit-places-${entry.id}`;
-  const optionsHtml = (allPlacesForItin || [])
-    .map((p) => `<option value="${escapeHtml(p.name)}"></option>`)
+  const fromDatalistId = `transit-from-${entry.id}`;
+  const toDatalistId = `transit-to-${entry.id}`;
+  const modesDatalistId = `transit-modes-${entry.id}`;
+  const modeOptionsHtml = TRANSIT_MODES
+    .map((m) => `<option value="${escapeHtml(m.label)}">${m.icon}</option>`)
     .join("");
-
-  const modeOptions = TRANSIT_MODES
-    .map(
-      (m) =>
-        `<option value="${m.value}" ${entry.mode === m.value ? "selected" : ""}>${m.icon} ${m.label}</option>`
-    )
-    .join("");
+  const modeValue = modeDisplayLabel(entry.mode);
 
   card.innerHTML = `
-    <datalist id="${datalistId}">${optionsHtml}</datalist>
-    <select class="board-transit-edit-mode" aria-label="Mode">${modeOptions}</select>
+    <datalist id="${fromDatalistId}"></datalist>
+    <datalist id="${toDatalistId}"></datalist>
+    <datalist id="${modesDatalistId}">${modeOptionsHtml}</datalist>
+    <input class="board-transit-edit-mode" list="${modesDatalistId}" type="text" placeholder="Mode (e.g. Train, Shinkansen)" value="${escapeHtml(modeValue)}" />
     <div class="board-transit-edit-row">
-      <input class="board-transit-edit-from" list="${datalistId}" type="text" placeholder="From" value="${escapeHtml(entry.from?.label || "")}" />
+      <input class="board-transit-edit-from" list="${fromDatalistId}" type="text" placeholder="From — type any place" value="${escapeHtml(entry.from?.label || "")}" autocomplete="off" />
       <span class="board-transit-edit-arrow" aria-hidden="true">→</span>
-      <input class="board-transit-edit-to" list="${datalistId}" type="text" placeholder="To" value="${escapeHtml(entry.to?.label || "")}" />
+      <input class="board-transit-edit-to" list="${toDatalistId}" type="text" placeholder="To — type any place" value="${escapeHtml(entry.to?.label || "")}" autocomplete="off" />
     </div>
     <div class="board-transit-edit-row">
       <input class="board-transit-edit-time" type="time" value="${escapeHtml(entry.departTime || "")}" aria-label="Depart" />
@@ -2177,6 +2300,23 @@ function renderTransitCardEditor(entry) {
       <button type="submit" class="board-card-btn board-edit-save">Save</button>
     </div>
   `;
+
+  const baseLocationOptions = [
+    ...(allPlacesForItin || []).map((p) => p.name),
+    ...COMMON_TRANSIT_NODES,
+  ];
+  const fromInput = card.querySelector(".board-transit-edit-from");
+  const toInput = card.querySelector(".board-transit-edit-to");
+  attachLocationSuggest(
+    fromInput,
+    card.querySelector(`#${CSS.escape(fromDatalistId)}`),
+    baseLocationOptions
+  );
+  attachLocationSuggest(
+    toInput,
+    card.querySelector(`#${CSS.escape(toDatalistId)}`),
+    baseLocationOptions
+  );
 
   const ticketHost = card.querySelector(".board-edit-tickets");
   const renderTickets = () => {
@@ -2218,7 +2358,8 @@ function renderTransitCardEditor(entry) {
 
   card.addEventListener("submit", async (ev) => {
     ev.preventDefault();
-    const mode = card.querySelector(".board-transit-edit-mode").value;
+    const modeRaw = card.querySelector(".board-transit-edit-mode").value;
+    const mode = parseTransitMode(modeRaw);
     const fromLabel = card.querySelector(".board-transit-edit-from").value.trim();
     const toLabel = card.querySelector(".board-transit-edit-to").value.trim();
     const [departInput, arriveInput] = card.querySelectorAll(".board-transit-edit-time");

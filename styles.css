@@ -1507,9 +1507,10 @@ a.board-card-title-link:hover { text-decoration: underline; }
 
 /* Transit editor */
 .board-card-transit-editing .board-transit-edit-mode {
+  width: 100%;
   font: inherit;
   font-size: 0.82rem;
-  padding: 0.3rem 0.4rem;
+  padding: 0.3rem 0.45rem;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--surface);
