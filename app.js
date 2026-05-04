@@ -1277,6 +1277,15 @@ async function coordsForLabel(label) {
   return geocodeLabel(label);
 }
 
+const YEN_PER_USD = 150;
+
+function yenToUsdLabel(yen) {
+  if (typeof yen !== "number" || !Number.isFinite(yen) || yen <= 0) return "";
+  const usd = yen / YEN_PER_USD;
+  if (usd < 1) return "<$1";
+  return "$" + Math.round(usd).toLocaleString();
+}
+
 async function estimateTransit(fromLabel, toLabel, mode) {
   if (!fromLabel || !toLabel) return null;
   const conf = TRANSIT_ESTIMATES[mode];
@@ -1321,9 +1330,14 @@ function buildTransitMetaLine(entry) {
   const parts = [];
   if (entry.line) parts.push(escapeHtml(entry.line));
   const time = formatTransitTimeRange(entry.departTime, entry.arriveTime);
-  if (time) parts.push(time);
+  if (time) {
+    parts.push(time);
+  } else if (typeof entry.durationMin === "number" && entry.durationMin > 0) {
+    parts.push(`≈ ${escapeHtml(formatDurationMin(entry.durationMin))}`);
+  }
   if (typeof entry.costYen === "number" && entry.costYen > 0) {
-    parts.push(`<span class="board-transit-cost">≈ ¥${entry.costYen.toLocaleString()}</span>`);
+    const usd = yenToUsdLabel(entry.costYen);
+    if (usd) parts.push(`<span class="board-transit-cost">≈ ${escapeHtml(usd)}</span>`);
   }
   return parts.length ? parts.join(' <span class="board-transit-dot">·</span> ') : "";
 }
@@ -2802,7 +2816,8 @@ function renderTransitCardEditor(entry) {
     const est = state.est;
     const pill = document.createElement("span");
     pill.className = "board-transit-estimate-pill";
-    pill.innerHTML = `≈ ${formatDurationMin(est.minutes)} · ¥${est.yen.toLocaleString()}`;
+    const usdLabel = yenToUsdLabel(est.yen);
+    pill.textContent = `≈ ${formatDurationMin(est.minutes)}${usdLabel ? " · " + usdLabel : ""}`;
     const apply = document.createElement("button");
     apply.type = "button";
     apply.className = "board-transit-apply";
@@ -2934,6 +2949,7 @@ function renderTransitCardEditor(entry) {
         placeSlug: null,
         costYen: lastEstimate?.yen ?? entry.costYen ?? null,
         distKm: lastEstimate?.distKm ?? entry.distKm ?? null,
+        durationMin: lastEstimate?.minutes ?? entry.durationMin ?? null,
       });
       boardState.editingId = null;
     } catch (e) {
