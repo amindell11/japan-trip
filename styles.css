@@ -1608,22 +1608,80 @@ a.board-card-title-link:hover { text-decoration: underline; }
 .board-popover {
   position: fixed;
   z-index: 1000;
-  width: 320px;
+  width: 340px;
   max-width: calc(100vw - 16px);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.14);
-  padding: 0.75rem 0.85rem 0.7rem;
   font-size: 0.82rem;
   color: var(--fg);
   line-height: 1.45;
+  pointer-events: auto;
+  overflow: hidden;
+  animation: board-popover-in 0.14s ease-out;
+}
+
+.board-popover-hero {
+  width: 100%;
+  height: 160px;
+  background: #efece6;
+  position: relative;
+  overflow: hidden;
+}
+
+.board-popover-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.board-popover-hero-skeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #efece6 0%, #f6f3ed 50%, #efece6 100%);
+  background-size: 200% 100%;
+  animation: board-popover-shimmer 1.4s infinite linear;
+}
+
+@keyframes board-popover-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+.board-popover-body {
+  padding: 0.75rem 0.85rem 0.7rem;
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
-  pointer-events: auto;
-  animation: board-popover-in 0.14s ease-out;
 }
+
+.board-popover-muted { color: var(--muted); font-style: italic; }
+
+.board-popover-gallery {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.3rem;
+}
+
+.board-popover-thumb {
+  display: block;
+  aspect-ratio: 1 / 1;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #efece6;
+}
+
+.board-popover-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.2s;
+}
+
+.board-popover-thumb:hover img { transform: scale(1.06); }
 
 @keyframes board-popover-in {
   from { opacity: 0; transform: translateY(-2px); }

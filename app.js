@@ -79,6 +79,81 @@ async function fetchThumb(title) {
   }
 }
 
+async function fetchWikiSummary(title) {
+  if (!title) return null;
+  try {
+    const res = await fetch(WIKI_SUMMARY + encodeURIComponent(title));
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+async function fetchWikiExtract(title) {
+  if (!title) return null;
+  try {
+    const url =
+      "https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1" +
+      "&redirects=1&format=json&origin=*&titles=" +
+      encodeURIComponent(title);
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const page = Object.values(data.query?.pages || {})[0];
+    return page?.extract || null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchWikiImages(title, max = 6) {
+  if (!title) return [];
+  try {
+    const res = await fetch(
+      "https://en.wikipedia.org/api/rest_v1/page/media-list/" + encodeURIComponent(title)
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    const items = (data.items || []).filter((i) => i.type === "image");
+    const photos = [];
+    for (const it of items) {
+      const t = (it.title || "").replace(/^File:/i, "");
+      if (!t) continue;
+      if (/\.svg$/i.test(t)) continue;
+      if (/(commons-logo|wiki.*\.png|icon|flag|coat_of_arms|locator)/i.test(t)) continue;
+      const thumb = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(t)}?width=600`;
+      const page = `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(t)}`;
+      photos.push({ thumb, page });
+      if (photos.length >= max) break;
+    }
+    return photos;
+  } catch {
+    return [];
+  }
+}
+
+const wikiCache = new Map();
+
+function getWikiBundle(title) {
+  if (!title) return Promise.resolve(null);
+  if (wikiCache.has(title)) return wikiCache.get(title);
+  const p = Promise.all([
+    fetchWikiSummary(title),
+    fetchWikiExtract(title),
+    fetchWikiImages(title, 5),
+  ])
+    .then(([summary, extract, images]) => ({
+      heroImage:
+        summary?.originalimage?.source || summary?.thumbnail?.source || null,
+      extract: extract || null,
+      images: images || [],
+    }))
+    .catch(() => null);
+  wikiCache.set(title, p);
+  return p;
+}
+
 function el(tag, className, html) {
   const e = document.createElement(tag);
   if (className) e.className = className;
@@ -1415,7 +1490,7 @@ function schedulePopoverHide() {
   popoverState.hideTimer = setTimeout(hidePopover, popoverState.hideDelay);
 }
 
-function popoverHTMLForCard(card) {
+function popoverContextForCard(card) {
   const paletteSlug = card.dataset.placeSlug;
   let placeSlug = paletteSlug || null;
   let entry = null;
@@ -1423,9 +1498,12 @@ function popoverHTMLForCard(card) {
     entry = boardState.entries.find((e) => e.id === card.dataset.id);
     if (entry) placeSlug = entry.placeSlug || null;
   }
-
   const hit = placeSlug && TRIP_DATA ? findPlaceBySlug(TRIP_DATA, placeSlug) : null;
-  const place = hit ? hit.place : null;
+  return { entry, hit, place: hit ? hit.place : null };
+}
+
+function popoverHTMLForCard(card) {
+  const { entry, hit, place } = popoverContextForCard(card);
 
   if (!place) {
     if (!entry) return null;
@@ -1442,15 +1520,17 @@ function popoverHTMLForCard(card) {
       )
       .join("");
     return `
-      <div class="board-popover-head">
-        <span class="board-popover-emoji">${escapeHtml(entryEmoji(entry))}</span>
-        <div class="board-popover-title-wrap">
-          <span class="board-popover-title">${escapeHtml(entry.title || "Untitled")}</span>
-          <span class="board-popover-sub">Day ${entry.day} · custom note</span>
+      <div class="board-popover-body">
+        <div class="board-popover-head">
+          <span class="board-popover-emoji">${escapeHtml(entryEmoji(entry))}</span>
+          <div class="board-popover-title-wrap">
+            <span class="board-popover-title">${escapeHtml(entry.title || "Untitled")}</span>
+            <span class="board-popover-sub">Day ${entry.day} · custom note</span>
+          </div>
         </div>
+        ${hasNotes ? `<p class="board-popover-summary">${escapeHtml(entry.notes)}</p>` : ""}
+        ${ticketRow ? `<div class="board-popover-links">${ticketRow}</div>` : ""}
       </div>
-      ${hasNotes ? `<p class="board-popover-summary">${escapeHtml(entry.notes)}</p>` : ""}
-      ${ticketRow ? `<div class="board-popover-links">${ticketRow}</div>` : ""}
     `;
   }
 
@@ -1495,21 +1575,90 @@ function popoverHTMLForCard(card) {
   const slug = slugify(place.name);
   const entryNote = entry?.notes?.trim();
 
+  const heroBlock = place.wiki
+    ? `<div class="board-popover-hero" data-hero><div class="board-popover-hero-skeleton"></div></div>`
+    : "";
+
+  const summaryBlock = place.summary
+    ? `<p class="board-popover-summary" data-summary>${escapeHtml(place.summary)}</p>`
+    : place.wiki
+    ? `<p class="board-popover-summary board-popover-muted" data-summary>Loading description…</p>`
+    : "";
+
   return `
-    <div class="board-popover-head">
-      <span class="board-popover-emoji">${escapeHtml(iconFor(place))}</span>
-      <div class="board-popover-title-wrap">
-        <span class="board-popover-title">${escapeHtml(place.name)}</span>
-        ${breadcrumb ? `<span class="board-popover-sub">${breadcrumb}</span>` : ""}
+    ${heroBlock}
+    <div class="board-popover-body">
+      <div class="board-popover-head">
+        <span class="board-popover-emoji">${escapeHtml(iconFor(place))}</span>
+        <div class="board-popover-title-wrap">
+          <span class="board-popover-title">${escapeHtml(place.name)}</span>
+          ${breadcrumb ? `<span class="board-popover-sub">${breadcrumb}</span>` : ""}
+        </div>
       </div>
+      ${place.travel ? `<p class="board-popover-travel">🚆 ${escapeHtml(place.travel)}</p>` : ""}
+      ${summaryBlock}
+      ${entryNote ? `<p class="board-popover-notes">${escapeHtml(entryNote)}</p>` : ""}
+      ${tagRow ? `<div class="board-popover-tags">${tagRow}</div>` : ""}
+      <div class="board-popover-gallery" data-gallery hidden></div>
+      ${linkRow ? `<div class="board-popover-links">${linkRow}</div>` : ""}
+      <a class="board-popover-more" href="place.html?slug=${encodeURIComponent(slug)}">View full details →</a>
     </div>
-    ${place.travel ? `<p class="board-popover-travel">🚆 ${escapeHtml(place.travel)}</p>` : ""}
-    ${place.summary ? `<p class="board-popover-summary">${escapeHtml(place.summary)}</p>` : ""}
-    ${entryNote ? `<p class="board-popover-notes">${escapeHtml(entryNote)}</p>` : ""}
-    ${tagRow ? `<div class="board-popover-tags">${tagRow}</div>` : ""}
-    ${linkRow ? `<div class="board-popover-links">${linkRow}</div>` : ""}
-    <a class="board-popover-more" href="place.html?slug=${encodeURIComponent(slug)}">View full details →</a>
   `;
+}
+
+function truncateText(text, max) {
+  if (!text) return "";
+  if (text.length <= max) return text;
+  const clipped = text.slice(0, max);
+  const lastBreak = Math.max(clipped.lastIndexOf(". "), clipped.lastIndexOf("? "), clipped.lastIndexOf("! "));
+  if (lastBreak > max * 0.5) return clipped.slice(0, lastBreak + 1) + " …";
+  return clipped.replace(/\s+\S*$/, "") + "…";
+}
+
+function enrichPopover(pop, card, place, data) {
+  if (!data) return;
+  if (popoverState.currentCard !== card) return;
+
+  const heroSlot = pop.querySelector("[data-hero]");
+  if (heroSlot) {
+    if (data.heroImage) {
+      heroSlot.innerHTML = "";
+      const img = document.createElement("img");
+      img.src = data.heroImage;
+      img.alt = place.name;
+      img.loading = "lazy";
+      heroSlot.appendChild(img);
+    } else {
+      heroSlot.remove();
+    }
+  }
+
+  const summarySlot = pop.querySelector("[data-summary]");
+  if (summarySlot && data.extract) {
+    const text = truncateText(data.extract, 320);
+    summarySlot.textContent = text;
+    summarySlot.classList.remove("board-popover-muted");
+  } else if (summarySlot && summarySlot.classList.contains("board-popover-muted")) {
+    summarySlot.textContent = place.summary || "";
+    if (place.summary) summarySlot.classList.remove("board-popover-muted");
+  }
+
+  const gallery = pop.querySelector("[data-gallery]");
+  if (gallery && data.images && data.images.length) {
+    const extras = data.images.filter((img) => img.thumb !== data.heroImage).slice(0, 4);
+    if (extras.length) {
+      gallery.hidden = false;
+      gallery.innerHTML = extras
+        .map(
+          (img) =>
+            `<a class="board-popover-thumb" href="${escapeHtml(img.page)}" target="_blank" rel="noopener">` +
+            `<img src="${escapeHtml(img.thumb)}" alt="" loading="lazy" /></a>`
+        )
+        .join("");
+    }
+  }
+
+  if (popoverState.currentCard === card) positionPopover(card, pop);
 }
 
 function positionPopover(card, pop) {
@@ -1551,6 +1700,14 @@ function showPopoverFor(card) {
   pop.style.left = "-9999px";
   pop.style.top = "-9999px";
   requestAnimationFrame(() => positionPopover(card, pop));
+
+  const { place } = popoverContextForCard(card);
+  if (place && place.wiki) {
+    getWikiBundle(place.wiki).then((data) => {
+      if (popoverState.currentCard !== card) return;
+      enrichPopover(pop, card, place, data);
+    });
+  }
 }
 
 function setupBoardPopover() {
