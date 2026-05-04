@@ -839,6 +839,21 @@ const TRANSIT_MODES = [
 ];
 const TRANSIT_MODE_MAP = Object.fromEntries(TRANSIT_MODES.map((m) => [m.value, m]));
 
+// Per-mode estimates: effective speed (after stops/transfers), fixed
+// boarding/transit overhead, route multiplier (real route vs great-circle),
+// and per-km / fixed cost in JPY. All values are rough but useful for
+// auto-filling arrival times and ballpark fares.
+const TRANSIT_ESTIMATES = {
+  shinkansen: { speedKmh: 220, overheadMin: 15,  routeMult: 1.05, costPerKmYen: 35,  costBaseYen: 0 },
+  train:      { speedKmh: 55,  overheadMin: 5,   routeMult: 1.30, costPerKmYen: 20,  costBaseYen: 0 },
+  subway:     { speedKmh: 30,  overheadMin: 3,   routeMult: 1.30, costPerKmYen: 0,   costBaseYen: 220 },
+  bus:        { speedKmh: 50,  overheadMin: 10,  routeMult: 1.30, costPerKmYen: 12,  costBaseYen: 0 },
+  taxi:       { speedKmh: 30,  overheadMin: 0,   routeMult: 1.30, costPerKmYen: 420, costBaseYen: 500 },
+  plane:      { speedKmh: 700, overheadMin: 120, routeMult: 1.05, costPerKmYen: 30,  costBaseYen: 3000 },
+  ferry:      { speedKmh: 30,  overheadMin: 15,  routeMult: 1.20, costPerKmYen: 30,  costBaseYen: 500 },
+  cable:      { speedKmh: 8,   overheadMin: 5,   routeMult: 1.40, costPerKmYen: 0,   costBaseYen: 1500 },
+};
+
 // Curated transit nodes — airports, major stations, common destinations —
 // merged with the place catalog to seed the From/To autocomplete before any
 // live Nominatim results arrive.
@@ -907,17 +922,20 @@ function haversineKm(a, b) {
   return 2 * R * Math.asin(Math.sqrt(x));
 }
 
-// Returns walking info for a pair of slugs; falls back to coord-based estimate.
-//   { meters, walkSec, source: 'cache'|'computed'|null, hKm }
+// Returns walking info for a pair of points; uses pre-computed walking
+// distances when both sides are catalog slugs, otherwise falls back to a
+// straight-line estimate from coords. One or both slugs may be null
+// (custom-card coords) — coords alone are enough for an estimate.
 function walkInfoForPair(slugA, slugB, coordsA, coordsB) {
-  if (!slugA || !slugB) return null;
-  if (slugA === slugB) {
+  if (slugA && slugB && slugA === slugB) {
     return { meters: 0, walkSec: 0, source: "cache", hKm: 0 };
   }
-  const cached = tripDistances[distancePairKey(slugA, slugB)];
   const hKm = coordsA && coordsB ? haversineKm(coordsA, coordsB) : null;
-  if (cached) {
-    return { meters: cached.meters, walkSec: cached.walkSec, source: "cache", hKm };
+  if (slugA && slugB) {
+    const cached = tripDistances[distancePairKey(slugA, slugB)];
+    if (cached) {
+      return { meters: cached.meters, walkSec: cached.walkSec, source: "cache", hKm };
+    }
   }
   if (coordsA && coordsB) {
     const meters = Math.round(hKm * 1000);
@@ -1011,6 +1029,20 @@ function entryEmoji(entry) {
     if (m) return m.icon;
     return "🚆";
   }
+  if (entry.kind === "custom") {
+    if (entry.emoji && entry.emoji.trim()) return entry.emoji.trim();
+    const p = placeFor(entry.placeSlug);
+    if (p) {
+      const full = TRIP_DATA
+        ? (() => {
+            const hit = findPlaceBySlug(TRIP_DATA, p.slug);
+            return hit ? hit.place : null;
+          })()
+        : null;
+      if (full) return iconFor(full);
+    }
+    return "📍";
+  }
   const p = placeFor(entry.placeSlug);
   if (p) {
     const full = TRIP_DATA
@@ -1033,6 +1065,26 @@ function entryStripeColor(entry) {
   }
   const p = placeFor(entry.placeSlug);
   if (p && CITY_COLORS[p.city]) return CITY_COLORS[p.city];
+  if (entry.kind === "custom") return "#9a7bd1";
+  return null;
+}
+
+// Coords usable on the mini map / distance segments / proximity context,
+// regardless of card kind. Catalog-linked entries inherit coords from the
+// place; custom entries with a resolved location carry their own coords.
+function entryCoords(entry) {
+  if (!entry) return null;
+  const p = placeFor(entry.placeSlug);
+  if (p && Array.isArray(p.coords) && p.coords.length === 2) return p.coords;
+  if (
+    entry.kind === "custom" &&
+    Array.isArray(entry.coords) &&
+    entry.coords.length === 2 &&
+    Number.isFinite(entry.coords[0]) &&
+    Number.isFinite(entry.coords[1])
+  ) {
+    return entry.coords;
+  }
   return null;
 }
 
@@ -1116,6 +1168,40 @@ async function fetchNominatimSuggestions(query) {
   }
 }
 
+// One-shot geocode: resolves a free-text label to [lat, lng]. Used when the
+// custom-card editor saves a location that doesn't match a catalog place.
+const geocodeCache = new Map();
+async function geocodeLabel(label) {
+  const q = (label || "").trim();
+  if (q.length < 2) return null;
+  if (geocodeCache.has(q)) return geocodeCache.get(q);
+  const params = new URLSearchParams({
+    q,
+    format: "json",
+    limit: "1",
+    "accept-language": "en",
+  });
+  try {
+    const res = await fetch(`${NOMINATIM_ENDPOINT}?${params.toString()}`);
+    if (!res.ok) {
+      geocodeCache.set(q, null);
+      return null;
+    }
+    const data = await res.json();
+    const hit = Array.isArray(data) ? data[0] : null;
+    const coords = hit && hit.lat && hit.lon
+      ? [Number(hit.lat), Number(hit.lon)]
+      : null;
+    const ok = coords && Number.isFinite(coords[0]) && Number.isFinite(coords[1]);
+    const out = ok ? coords : null;
+    geocodeCache.set(q, out);
+    return out;
+  } catch {
+    geocodeCache.set(q, null);
+    return null;
+  }
+}
+
 function shortenNominatimLabel(displayName) {
   if (!displayName) return "";
   const parts = displayName.split(",").map((p) => p.trim()).filter(Boolean);
@@ -1172,6 +1258,43 @@ function transitDurationMin(dep, arr) {
   return diff;
 }
 
+function addMinutesToTime(timeStr, minutes) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(timeStr || "");
+  if (!m || !Number.isFinite(minutes)) return "";
+  let total = Number(m[1]) * 60 + Number(m[2]) + Math.round(minutes);
+  total = ((total % (24 * 60)) + 24 * 60) % (24 * 60);
+  const h = Math.floor(total / 60);
+  const mm = total % 60;
+  return `${String(h).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+}
+
+async function coordsForLabel(label) {
+  const slug = slugForPlaceName(label);
+  if (slug) {
+    const p = placeFor(slug);
+    if (p?.coords) return p.coords;
+  }
+  return geocodeLabel(label);
+}
+
+async function estimateTransit(fromLabel, toLabel, mode) {
+  if (!fromLabel || !toLabel) return null;
+  const conf = TRANSIT_ESTIMATES[mode];
+  if (!conf) return null;
+  const [fromCoord, toCoord] = await Promise.all([
+    coordsForLabel(fromLabel),
+    coordsForLabel(toLabel),
+  ]);
+  if (!fromCoord || !toCoord) return null;
+  const lineKm = haversineKm(fromCoord, toCoord);
+  if (!Number.isFinite(lineKm)) return null;
+  const distKm = lineKm * conf.routeMult;
+  const minutes = Math.round((distKm / conf.speedKmh) * 60 + conf.overheadMin);
+  const rawYen = conf.costBaseYen + distKm * conf.costPerKmYen;
+  const yen = Math.max(0, Math.round(rawYen / 100) * 100);
+  return { minutes, yen, distKm };
+}
+
 function formatDurationMin(min) {
   if (min == null || min <= 0) return "";
   if (min < 60) return `${min}m`;
@@ -1199,6 +1322,9 @@ function buildTransitMetaLine(entry) {
   if (entry.line) parts.push(escapeHtml(entry.line));
   const time = formatTransitTimeRange(entry.departTime, entry.arriveTime);
   if (time) parts.push(time);
+  if (typeof entry.costYen === "number" && entry.costYen > 0) {
+    parts.push(`<span class="board-transit-cost">≈ ¥${entry.costYen.toLocaleString()}</span>`);
+  }
   return parts.length ? parts.join(' <span class="board-transit-dot">·</span> ') : "";
 }
 
@@ -1367,8 +1493,43 @@ function buildQuickAdd(dayNum) {
   transitBtn.textContent = "+ transit";
   transitBtn.addEventListener("click", () => addEmptyTransitForDay(dayNum));
 
-  wrap.append(input, transitBtn);
+  const customBtn = document.createElement("button");
+  customBtn.type = "button";
+  customBtn.className = "board-add-custom-btn";
+  customBtn.title = "Add a custom card with optional location";
+  customBtn.textContent = "+ custom";
+  customBtn.addEventListener("click", () => addEmptyCustomForDay(dayNum));
+
+  wrap.append(input, transitBtn, customBtn);
   return wrap;
+}
+
+async function addEmptyCustomForDay(dayNum) {
+  if (!window.Trip?.configured || !window.Trip.currentUser) {
+    alert("Sign in to add a card");
+    return;
+  }
+  const siblings = getCardOrdersForDay(dayNum);
+  const topOrder = siblings.length ? siblings[0] - 1 : 0;
+  try {
+    const id = await window.Trip.addItineraryEntry({
+      day: dayNum,
+      order: topOrder,
+      placeSlug: null,
+      kind: "custom",
+      title: "Custom card",
+      emoji: "",
+      locationLabel: "",
+      coords: null,
+      notes: "",
+      tickets: [],
+    });
+    if (id) {
+      boardState.editingId = id;
+    }
+  } catch (e) {
+    alert(e.message);
+  }
 }
 
 async function addEmptyTransitForDay(dayNum) {
@@ -1490,15 +1651,15 @@ function reconcileBoard() {
 }
 
 function renderDistanceSegment(prev, next) {
-  const prevPlace = placeFor(prev.placeSlug);
-  const nextPlace = placeFor(next.placeSlug);
-  if (!prevPlace?.coords || !nextPlace?.coords) return null;
+  const prevCoords = entryCoords(prev);
+  const nextCoords = entryCoords(next);
+  if (!prevCoords || !nextCoords) return null;
 
   const info = walkInfoForPair(
     prev.placeSlug,
     next.placeSlug,
-    prevPlace.coords,
-    nextPlace.coords
+    prevCoords,
+    nextCoords
   );
   if (!info) return null;
 
@@ -1508,7 +1669,7 @@ function renderDistanceSegment(prev, next) {
   if (km > WALK_MAX_KM) {
     const a = document.createElement("a");
     a.className = "board-seg-link";
-    a.href = `https://www.google.com/maps/dir/?api=1&origin=${prevPlace.coords[0]},${prevPlace.coords[1]}&destination=${nextPlace.coords[0]},${nextPlace.coords[1]}&travelmode=transit`;
+    a.href = `https://www.google.com/maps/dir/?api=1&origin=${prevCoords[0]},${prevCoords[1]}&destination=${nextCoords[0]},${nextCoords[1]}&travelmode=transit`;
     a.target = "_blank";
     a.rel = "noopener";
     a.textContent = `📍 ${km < 10 ? km.toFixed(1) : Math.round(km)} km · directions ↗`;
@@ -1595,10 +1756,7 @@ function renderMiniMap() {
 
   panel.dataset.collapsed = "false";
   const entries = (groupEntriesByDay(boardState.entries).get(day) || []).filter(
-    (e) => {
-      const p = placeFor(e.placeSlug);
-      return p && Array.isArray(p.coords);
-    }
+    (e) => entryCoords(e) != null
   );
   const titleText = boardState.dayTitles[String(day)];
   const label = titleText
@@ -1626,16 +1784,23 @@ function renderMiniMap() {
   const points = [];
   entries.forEach((entry, i) => {
     const place = placeFor(entry.placeSlug);
-    const color = CITY_COLORS[place.city] || "#444";
-    const marker = L.marker(place.coords, {
+    const coords = entryCoords(entry);
+    const color = place
+      ? CITY_COLORS[place.city] || "#444"
+      : entry.kind === "custom"
+      ? "#9a7bd1"
+      : "#444";
+    const marker = L.marker(coords, {
       icon: numberedDivIcon(i + 1, color, false),
     });
     marker.entryId = entry.id;
-    marker.bindTooltip(`${i + 1}. ${entry.title}`, { direction: "top", offset: [0, -22] });
+    const sub = !place && entry.kind === "custom" ? customLocationSubLabel(entry) : "";
+    const tip = sub ? `${i + 1}. ${entry.title} — ${sub}` : `${i + 1}. ${entry.title}`;
+    marker.bindTooltip(tip, { direction: "top", offset: [0, -22] });
     marker.on("click", () => focusCardForEntry(entry.id));
     boardState.miniMapLayers.addLayer(marker);
     boardState.pinByEntryId.set(entry.id, marker);
-    points.push(place.coords);
+    points.push(coords);
   });
 
   for (let i = 0; i < points.length - 1; i++) {
@@ -1701,9 +1866,13 @@ function activeDayProximityContext() {
   const cities = new Set();
   for (const e of entries) {
     const p = placeFor(e.placeSlug);
-    if (!p) continue;
-    cities.add(p.city);
-    if (Array.isArray(p.coords)) anchors.push(p.coords);
+    if (p) {
+      cities.add(p.city);
+      if (Array.isArray(p.coords)) anchors.push(p.coords);
+      continue;
+    }
+    const coords = entryCoords(e);
+    if (coords) anchors.push(coords);
   }
   if (anchors.length === 0 && cities.size === 0) return null;
   return { anchors, cities };
@@ -1711,16 +1880,19 @@ function activeDayProximityContext() {
 
 function proximityTierFor(place, ctx) {
   if (!ctx) return null;
-  if (!ctx.cities.has(place.city)) return "far";
-  if (!Array.isArray(place.coords) || ctx.anchors.length === 0) return "near";
-  let minKm = Infinity;
-  for (const a of ctx.anchors) {
-    const km = haversineKm(a, place.coords);
-    if (km < minKm) minKm = km;
+  const cityMatch = ctx.cities.has(place.city);
+  if (Array.isArray(place.coords) && ctx.anchors.length > 0) {
+    let minKm = Infinity;
+    for (const a of ctx.anchors) {
+      const km = haversineKm(a, place.coords);
+      if (km < minKm) minKm = km;
+    }
+    if (minKm <= NEAR_KM) return "near";
+    if (minKm <= MID_KM) return "mid";
+    return cityMatch ? "mid" : "far";
   }
-  if (minKm <= NEAR_KM) return "near";
-  if (minKm <= MID_KM) return "mid";
-  return "far";
+  if (!cityMatch) return "far";
+  return "near";
 }
 
 function renderPalette() {
@@ -1805,6 +1977,7 @@ function updateAuthAffordances(user) {
   for (const wrap of document.querySelectorAll(".board-add")) {
     const input = wrap.querySelector(".board-add-input");
     const transitBtn = wrap.querySelector(".board-add-transit-btn");
+    const customBtn = wrap.querySelector(".board-add-custom-btn");
     if (!configured) {
       input.disabled = true;
       input.placeholder = "Sign-in disabled";
@@ -1816,6 +1989,7 @@ function updateAuthAffordances(user) {
       input.placeholder = "+ add note…";
     }
     if (transitBtn) transitBtn.disabled = !configured || !user;
+    if (customBtn) customBtn.disabled = !configured || !user;
   }
   for (const titleInput of document.querySelectorAll(".board-col-day-title")) {
     titleInput.disabled = !configured || !user;
@@ -1963,6 +2137,7 @@ function computeOrderFromDom(list, droppedEl) {
 
 function renderCard(entry, user) {
   if (entry.kind === "transit") return renderTransitCard(entry, user);
+  if (entry.kind === "custom") return renderCustomCard(entry, user);
 
   const card = el("article", "board-card");
   card.dataset.id = entry.id;
@@ -2067,6 +2242,7 @@ function renderCard(entry, user) {
 
 function renderCardEditor(entry) {
   if (entry.kind === "transit") return renderTransitCardEditor(entry);
+  if (entry.kind === "custom") return renderCustomCardEditor(entry);
 
   const card = el("form", "board-card board-card-editing");
   card.dataset.id = entry.id;
@@ -2142,6 +2318,283 @@ function renderCardEditor(entry) {
     try {
       await window.Trip.updateItineraryEntry(entry.id, {
         title,
+        notes: card.querySelector(".board-edit-notes").value.trim(),
+        tickets: cleanTickets,
+      });
+      boardState.editingId = null;
+    } catch (e) {
+      alert(e.message);
+    }
+  });
+
+  return card;
+}
+
+/* ---------- Custom cards (free-text card with optional location) ---------- */
+
+function customLocationSubLabel(entry) {
+  if (!entry) return "";
+  if (entry.placeSlug) {
+    const p = placeFor(entry.placeSlug);
+    if (p) return p.name;
+  }
+  if (entry.locationLabel && entry.locationLabel.trim()) {
+    return entry.locationLabel.trim();
+  }
+  return "";
+}
+
+function renderCustomCard(entry, user) {
+  const card = el("article", "board-card board-card-custom");
+  card.dataset.id = entry.id;
+  card.dataset.day = String(entry.day);
+  card.dataset.order = String(typeof entry.order === "number" ? entry.order : 0);
+  card.dataset.kind = "custom";
+
+  const stripe = entryStripeColor(entry);
+  if (stripe) card.style.setProperty("--stripe", stripe);
+
+  card.addEventListener("click", (ev) => {
+    if (ev.target.closest("a, button, input, textarea")) return;
+    const day = Number(entry.day);
+    if (boardState.activeDay !== day) {
+      setActiveDay(day);
+      setTimeout(() => pulsePin(entry.id), 80);
+    } else {
+      pulsePin(entry.id);
+    }
+  });
+
+  const head = el("div", "board-card-head");
+  head.innerHTML = `<span class="board-card-emoji">${escapeHtml(entryEmoji(entry))}</span>`;
+
+  const titleWrap = el("div", "board-card-title-wrap");
+  titleWrap.appendChild(
+    el("span", "board-card-title", escapeHtml(entry.title || "Untitled"))
+  );
+  const sub = customLocationSubLabel(entry);
+  if (sub) {
+    const subEl = el("span", "board-card-custom-loc", `📍 ${escapeHtml(sub)}`);
+    if (!entryCoords(entry)) subEl.classList.add("board-card-custom-loc-unmapped");
+    titleWrap.appendChild(subEl);
+  }
+  head.appendChild(titleWrap);
+
+  if (user && entry.createdBy?.uid === user.uid) {
+    const actions = el("div", "board-card-actions");
+    const editBtn = el("button", "board-card-btn", "✎");
+    editBtn.type = "button";
+    editBtn.title = "Edit";
+    editBtn.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      boardState.editingId = entry.id;
+      reconcileBoard();
+    });
+    const delBtn = el("button", "board-card-btn board-card-btn-danger", "×");
+    delBtn.type = "button";
+    delBtn.title = "Delete";
+    delBtn.addEventListener("click", async (ev) => {
+      ev.stopPropagation();
+      if (!confirm("Delete this card?")) return;
+      try {
+        await window.Trip.deleteItineraryEntry(entry.id);
+      } catch (e) {
+        alert(e.message);
+      }
+    });
+    actions.append(editBtn, delBtn);
+    head.appendChild(actions);
+  }
+
+  card.appendChild(head);
+
+  if (entry.notes) {
+    card.appendChild(el("p", "board-card-notes", escapeHtml(entry.notes)));
+  }
+
+  const tickets = (entry.tickets || []).filter((t) => t && t.url);
+  if (tickets.length) {
+    const ul = el("ul", "board-card-tickets");
+    for (const t of tickets) {
+      const li = document.createElement("li");
+      const a = document.createElement("a");
+      a.href = t.url;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = (t.label || "Link") + " ↗";
+      a.addEventListener("mousedown", (ev) => ev.stopPropagation());
+      li.appendChild(a);
+      ul.appendChild(li);
+    }
+    card.appendChild(ul);
+  }
+
+  return card;
+}
+
+function renderCustomCardEditor(entry) {
+  const card = el("form", "board-card board-card-editing board-card-custom-editing");
+  card.dataset.id = entry.id;
+  card.dataset.order = String(typeof entry.order === "number" ? entry.order : 0);
+  card.dataset.kind = "custom";
+
+  const tickets = (entry.tickets || []).map((t) => ({
+    label: t.label || "",
+    url: t.url || "",
+  }));
+  if (tickets.length === 0) tickets.push({ label: "", url: "" });
+
+  const datalistId = `custom-places-${entry.id}`;
+  const baseLocationOptions = [
+    ...allPlacesForItin.map((p) => p.name),
+    ...COMMON_TRANSIT_NODES,
+  ];
+
+  const initialTitle =
+    entry.title && entry.title !== "Custom card" ? entry.title : "";
+
+  card.innerHTML = `
+    <datalist id="${datalistId}"></datalist>
+    <div class="board-custom-edit-row">
+      <input class="board-custom-edit-emoji" type="text" maxlength="4" placeholder="🎯" value="${escapeHtml(entry.emoji || "")}" aria-label="Emoji" />
+      <input class="board-edit-title board-custom-edit-title" type="text" value="${escapeHtml(initialTitle)}" placeholder="Title" required />
+    </div>
+    <input class="board-custom-edit-location" list="${datalistId}" type="text" placeholder="Location (optional) — e.g. Shinjuku, Tokyo" value="${escapeHtml(entry.locationLabel || "")}" />
+    <div class="board-custom-edit-loc-status" data-loc-status></div>
+    <textarea class="board-edit-notes" rows="2" placeholder="Notes (optional)">${escapeHtml(entry.notes || "")}</textarea>
+    <div class="board-edit-tickets"></div>
+    <button type="button" class="board-edit-add-ticket">+ link</button>
+    <div class="board-edit-actions">
+      <button type="button" class="board-card-btn board-edit-cancel">Cancel</button>
+      <button type="submit" class="board-card-btn board-edit-save">Save</button>
+    </div>
+  `;
+
+  const locationInput = card.querySelector(".board-custom-edit-location");
+  const locationDatalist = card.querySelector(`#${datalistId}`);
+  attachLocationSuggest(locationInput, locationDatalist, baseLocationOptions);
+
+  const locStatus = card.querySelector("[data-loc-status]");
+  const renderLocStatus = () => {
+    const raw = locationInput.value.trim();
+    if (!raw) {
+      locStatus.textContent = "";
+      locStatus.classList.remove("is-resolved", "is-unmapped");
+      return;
+    }
+    const slug = slugForPlaceName(raw);
+    if (slug) {
+      locStatus.textContent = "📍 Linked to catalog place — will appear on the map";
+      locStatus.classList.add("is-resolved");
+      locStatus.classList.remove("is-unmapped");
+      return;
+    }
+    if (
+      entry.locationLabel === raw &&
+      Array.isArray(entry.coords) &&
+      entry.coords.length === 2
+    ) {
+      locStatus.textContent = "📍 Geocoded — will appear on the map";
+      locStatus.classList.add("is-resolved");
+      locStatus.classList.remove("is-unmapped");
+      return;
+    }
+    locStatus.textContent = "Will geocode on save (or save without a map pin)";
+    locStatus.classList.remove("is-resolved");
+    locStatus.classList.add("is-unmapped");
+  };
+  locationInput.addEventListener("input", renderLocStatus);
+  renderLocStatus();
+
+  const ticketHost = card.querySelector(".board-edit-tickets");
+  const renderTickets = () => {
+    ticketHost.innerHTML = "";
+    tickets.forEach((t, i) => {
+      const row = el("div", "board-edit-ticket-row");
+      row.innerHTML = `
+        <input data-i="${i}" data-k="label" type="text" placeholder="Label" value="${escapeHtml(t.label)}" />
+        <input data-i="${i}" data-k="url" type="url" placeholder="https://…" value="${escapeHtml(t.url)}" />
+        <button type="button" class="board-card-btn board-card-btn-danger" data-rm="${i}">×</button>
+      `;
+      ticketHost.appendChild(row);
+    });
+  };
+  renderTickets();
+
+  ticketHost.addEventListener("input", (ev) => {
+    const i = ev.target.dataset.i;
+    const k = ev.target.dataset.k;
+    if (i != null && k) tickets[Number(i)][k] = ev.target.value;
+  });
+  ticketHost.addEventListener("click", (ev) => {
+    const rm = ev.target.dataset.rm;
+    if (rm != null) {
+      tickets.splice(Number(rm), 1);
+      if (tickets.length === 0) tickets.push({ label: "", url: "" });
+      renderTickets();
+    }
+  });
+  card.querySelector(".board-edit-add-ticket").addEventListener("click", () => {
+    tickets.push({ label: "", url: "" });
+    renderTickets();
+  });
+
+  const titleInput = card.querySelector(".board-edit-title");
+  const emojiInput = card.querySelector(".board-custom-edit-emoji");
+
+  card.querySelector(".board-edit-cancel").addEventListener("click", () => {
+    boardState.editingId = null;
+    reconcileBoard();
+  });
+
+  card.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const title = titleInput.value.trim();
+    if (!title) {
+      titleInput.focus();
+      return;
+    }
+    const emoji = emojiInput.value.trim().slice(0, 4);
+    const locLabel = locationInput.value.trim();
+    const cleanTickets = tickets
+      .map((t) => ({ label: t.label.trim(), url: t.url.trim() }))
+      .filter((t) => t.url);
+
+    let placeSlug = null;
+    let coords = null;
+    if (locLabel) {
+      placeSlug = slugForPlaceName(locLabel);
+      if (placeSlug) {
+        // Catalog match — coords come from the catalog via entryCoords.
+        coords = null;
+      } else if (
+        entry.locationLabel === locLabel &&
+        Array.isArray(entry.coords) &&
+        entry.coords.length === 2
+      ) {
+        coords = entry.coords;
+      } else {
+        const saveBtn = card.querySelector(".board-edit-save");
+        if (saveBtn) {
+          saveBtn.disabled = true;
+          saveBtn.textContent = "Geocoding…";
+        }
+        coords = await geocodeLabel(locLabel);
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = "Save";
+        }
+      }
+    }
+
+    try {
+      await window.Trip.updateItineraryEntry(entry.id, {
+        kind: "custom",
+        title,
+        emoji,
+        placeSlug,
+        locationLabel: locLabel,
+        coords,
         notes: card.querySelector(".board-edit-notes").value.trim(),
         tickets: cleanTickets,
       });
@@ -2280,7 +2733,7 @@ function renderTransitCardEditor(entry) {
     <datalist id="${fromDatalistId}"></datalist>
     <datalist id="${toDatalistId}"></datalist>
     <datalist id="${modesDatalistId}">${modeOptionsHtml}</datalist>
-    <input class="board-transit-edit-mode" list="${modesDatalistId}" type="text" placeholder="Mode (e.g. Train, Shinkansen)" value="${escapeHtml(modeValue)}" />
+    <input class="board-transit-edit-mode" list="${modesDatalistId}" type="text" placeholder="Mode (type or pick)" value="${escapeHtml(modeValue)}" autocomplete="off" />
     <div class="board-transit-edit-row">
       <input class="board-transit-edit-from" list="${fromDatalistId}" type="text" placeholder="From — type any place" value="${escapeHtml(entry.from?.label || "")}" autocomplete="off" />
       <span class="board-transit-edit-arrow" aria-hidden="true">→</span>
@@ -2291,7 +2744,8 @@ function renderTransitCardEditor(entry) {
       <span class="board-transit-edit-arrow" aria-hidden="true">→</span>
       <input class="board-transit-edit-time" type="time" value="${escapeHtml(entry.arriveTime || "")}" aria-label="Arrive" />
     </div>
-    <input class="board-transit-edit-line" type="text" placeholder="Line / number (e.g. Nozomi 7)" value="${escapeHtml(entry.line || "")}" />
+    <div class="board-transit-estimate" data-estimate></div>
+    <input class="board-transit-edit-line" type="text" placeholder="Line / number (e.g. Nozomi 7)" value="${escapeHtml(entry.line || "")}" autocomplete="off" />
     <textarea class="board-edit-notes" rows="2" placeholder="Notes (optional)">${escapeHtml(entry.notes || "")}</textarea>
     <div class="board-edit-tickets"></div>
     <button type="button" class="board-edit-add-ticket">+ link</button>
@@ -2305,8 +2759,12 @@ function renderTransitCardEditor(entry) {
     ...(allPlacesForItin || []).map((p) => p.name),
     ...COMMON_TRANSIT_NODES,
   ];
+  const modeInput = card.querySelector(".board-transit-edit-mode");
   const fromInput = card.querySelector(".board-transit-edit-from");
   const toInput = card.querySelector(".board-transit-edit-to");
+  const [departInput, arriveInput] = card.querySelectorAll(".board-transit-edit-time");
+  const estimateBox = card.querySelector("[data-estimate]");
+
   attachLocationSuggest(
     fromInput,
     card.querySelector(`#${CSS.escape(fromDatalistId)}`),
@@ -2317,6 +2775,97 @@ function renderTransitCardEditor(entry) {
     card.querySelector(`#${CSS.escape(toDatalistId)}`),
     baseLocationOptions
   );
+
+  // Make the typeable inputs feel like dropdown-or-typed: clicking selects
+  // existing text so the user can immediately replace, and Chrome reliably
+  // pops the datalist when the cursor moves.
+  for (const inp of [modeInput, fromInput, toInput]) {
+    inp.addEventListener("focus", () => {
+      try { inp.select(); } catch {}
+    });
+  }
+
+  // ---- Travel-time + cost estimate ----
+  let lastEstimate = null;
+  let estimateTimer = null;
+  let estimateGen = 0;
+
+  const renderEstimateUI = (state) => {
+    if (!estimateBox) return;
+    estimateBox.innerHTML = "";
+    estimateBox.classList.toggle("is-loading", state.kind === "loading");
+    if (state.kind === "loading") {
+      estimateBox.textContent = "estimating travel time…";
+      return;
+    }
+    if (state.kind === "none") return;
+    const est = state.est;
+    const pill = document.createElement("span");
+    pill.className = "board-transit-estimate-pill";
+    pill.innerHTML = `≈ ${formatDurationMin(est.minutes)} · ¥${est.yen.toLocaleString()}`;
+    const apply = document.createElement("button");
+    apply.type = "button";
+    apply.className = "board-transit-apply";
+    apply.textContent = departInput.value ? "fill arrive" : arriveInput.value ? "back-fill depart" : "";
+    if (apply.textContent) {
+      apply.addEventListener("click", () => applyEstimateToTimes(est));
+      pill.appendChild(apply);
+    }
+    const hint = document.createElement("span");
+    hint.className = "board-transit-estimate-hint";
+    hint.textContent = `~${est.distKm.toFixed(0)} km · rough estimate`;
+    estimateBox.append(pill, hint);
+  };
+
+  const applyEstimateToTimes = (est) => {
+    if (departInput.value) {
+      arriveInput.value = addMinutesToTime(departInput.value, est.minutes);
+    } else if (arriveInput.value) {
+      departInput.value = addMinutesToTime(arriveInput.value, -est.minutes);
+    }
+    renderEstimateUI({ kind: "ok", est });
+  };
+
+  const recomputeEstimate = () => {
+    clearTimeout(estimateTimer);
+    estimateTimer = setTimeout(async () => {
+      const fromLabel = fromInput.value.trim();
+      const toLabel = toInput.value.trim();
+      const mode = parseTransitMode(modeInput.value);
+      if (!fromLabel || !toLabel) {
+        lastEstimate = null;
+        renderEstimateUI({ kind: "none" });
+        return;
+      }
+      const myGen = ++estimateGen;
+      renderEstimateUI({ kind: "loading" });
+      const est = await estimateTransit(fromLabel, toLabel, mode);
+      if (myGen !== estimateGen) return;
+      lastEstimate = est;
+      if (!est) {
+        renderEstimateUI({ kind: "none" });
+        return;
+      }
+      // If depart is set and arrive is empty, auto-fill arrive once.
+      if (departInput.value && !arriveInput.value) {
+        arriveInput.value = addMinutesToTime(departInput.value, est.minutes);
+      }
+      renderEstimateUI({ kind: "ok", est });
+    }, 400);
+  };
+
+  for (const inp of [modeInput, fromInput, toInput]) {
+    inp.addEventListener("input", recomputeEstimate);
+    inp.addEventListener("change", recomputeEstimate);
+  }
+  departInput.addEventListener("change", () => {
+    if (lastEstimate && departInput.value && !arriveInput.value) {
+      arriveInput.value = addMinutesToTime(departInput.value, lastEstimate.minutes);
+    }
+  });
+
+  // Seed the estimate (in case the entry already has from/to set).
+  recomputeEstimate();
 
   const ticketHost = card.querySelector(".board-edit-tickets");
   const renderTickets = () => {
@@ -2383,6 +2932,8 @@ function renderTransitCardEditor(entry) {
         tickets: cleanTickets,
         title: transitTitleFromFields(mode, fromLabel, toLabel),
         placeSlug: null,
+        costYen: lastEstimate?.yen ?? entry.costYen ?? null,
+        distKm: lastEstimate?.distKm ?? entry.distKm ?? null,
       });
       boardState.editingId = null;
     } catch (e) {
@@ -2518,27 +3069,47 @@ function popoverHTMLForCard(card) {
     `;
   }
 
-  if (!place) {
+  if (!place || entry?.kind === "custom") {
     if (!entry) return null;
+    const isCustom = entry.kind === "custom";
+    const locLabel = isCustom ? customLocationSubLabel(entry) : "";
+    const coords = isCustom ? entryCoords(entry) : null;
     const hasNotes = entry.notes && entry.notes.trim();
     const hasTickets = (entry.tickets || []).some((t) => t && t.url);
-    if (!hasNotes && !hasTickets) return null;
-    const ticketRow = (entry.tickets || [])
+    if (!isCustom && !hasNotes && !hasTickets) return null;
+
+    const baseTickets = (entry.tickets || [])
       .filter((t) => t && t.url)
       .map(
         (t) =>
           `<a href="${escapeHtml(t.url)}" target="_blank" rel="noopener">${escapeHtml(
             t.label || "Link"
           )}</a>`
-      )
-      .join("");
+      );
+    if (isCustom && coords) {
+      baseTickets.push(
+        `<a href="https://www.google.com/maps/search/?api=1&query=${coords[0]},${coords[1]}" target="_blank" rel="noopener">Google Maps</a>`
+      );
+    } else if (isCustom && locLabel) {
+      baseTickets.push(
+        `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locLabel)}" target="_blank" rel="noopener">Google Maps</a>`
+      );
+    }
+    const ticketRow = baseTickets.join("");
+
+    const sub = isCustom
+      ? locLabel
+        ? `Day ${entry.day} · 📍 ${escapeHtml(locLabel)}${coords ? "" : " · not on map"}`
+        : `Day ${entry.day} · custom card`
+      : `Day ${entry.day} · custom note`;
+
     return `
       <div class="board-popover-body">
         <div class="board-popover-head">
           <span class="board-popover-emoji">${escapeHtml(entryEmoji(entry))}</span>
           <div class="board-popover-title-wrap">
             <span class="board-popover-title">${escapeHtml(entry.title || "Untitled")}</span>
-            <span class="board-popover-sub">Day ${entry.day} · custom note</span>
+            <span class="board-popover-sub">${sub}</span>
           </div>
         </div>
         ${hasNotes ? `<p class="board-popover-summary">${escapeHtml(entry.notes)}</p>` : ""}

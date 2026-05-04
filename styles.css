@@ -1555,6 +1555,54 @@ a.board-card-title-link:hover { text-decoration: underline; }
   color: var(--fg);
 }
 
+.board-transit-estimate {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  font-size: 0.74rem;
+  color: var(--muted);
+  min-height: 1.2rem;
+}
+
+.board-transit-estimate.is-loading { font-style: italic; opacity: 0.7; }
+
+.board-transit-estimate-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.board-transit-apply {
+  font: inherit;
+  font-size: 0.7rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.board-transit-apply:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.board-transit-estimate-hint {
+  color: #999;
+  font-size: 0.7rem;
+}
+
+.board-transit-cost {
+  font-variant-numeric: tabular-nums;
+}
+
 .board-popover-transit-meta {
   font-size: 0.82rem;
   color: #444;
@@ -1624,6 +1672,102 @@ a.board-card-title-link:hover { text-decoration: underline; }
 .board-add-transit-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.board-add-custom-btn {
+  flex-shrink: 0;
+  font: inherit;
+  font-size: 0.74rem;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.board-add-custom-btn:hover:not(:disabled) {
+  border-color: #9a7bd1;
+  color: #6f4fb8;
+  border-style: solid;
+  background: #f3eefb;
+}
+
+.board-add-custom-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Custom cards */
+.board-card-custom {
+  background: linear-gradient(180deg, #fbf9ff, var(--surface) 65%);
+}
+
+.board-card-custom-loc {
+  display: block;
+  font-size: 0.74rem;
+  color: #6f4fb8;
+  margin-top: 0.1rem;
+  letter-spacing: 0.01em;
+}
+
+.board-card-custom-loc-unmapped {
+  color: #999;
+  font-style: italic;
+}
+
+/* Custom card editor */
+.board-custom-edit-row {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.board-custom-edit-emoji {
+  flex: 0 0 2.4rem;
+  text-align: center;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.3rem 0.2rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--fg);
+}
+
+.board-custom-edit-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.board-custom-edit-location {
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.3rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--fg);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.board-custom-edit-loc-status {
+  font-size: 0.7rem;
+  color: var(--muted);
+  letter-spacing: 0.01em;
+  min-height: 0.9rem;
+}
+
+.board-custom-edit-loc-status.is-resolved {
+  color: #6f4fb8;
+}
+
+.board-custom-edit-loc-status.is-unmapped {
+  color: #b07f17;
 }
 
 /* Ideas palette (bottom panel) */
