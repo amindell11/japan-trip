@@ -82,6 +82,12 @@ service cloud.firestore {
       allow delete: if request.auth != null
         && resource.data.createdBy.uid == request.auth.uid;
     }
+
+    match /itinerary_meta/{doc} {
+      // Shared trip metadata (editable day titles).
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
   }
 }
 ```

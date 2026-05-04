@@ -659,15 +659,31 @@ function loadCardStats() {
 
 /* ---------- Itinerary board ---------- */
 
-const DAY_COUNT = 12;
-const FALLBACK_EMOJIS = ["✨","🌸","🍡","🗾","🍵","🚅","🏮","🎐","📸","🧭","🎋","🍥"];
+const DAY_COUNT = 13;
+const TRIP_START = "2026-06-04";
+const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const WEEKDAY_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const FALLBACK_EMOJIS = ["✨","🌸","🍡","🗾","🍵","🚅","🏮","🎐","📸","🧭","🎋","🍥","🎏"];
 
 const boardState = {
   entries: [],
   editingId: null,
   dragging: false,
   paletteQuery: "",
+  dayTitles: {},
 };
+
+function dateForDay(dayNum) {
+  const [y, m, d] = TRIP_START.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  date.setDate(date.getDate() + dayNum - 1);
+  return date;
+}
+
+function formatDayDate(dayNum) {
+  const date = dateForDay(dayNum);
+  return `${WEEKDAY_SHORT[date.getDay()]} · ${MONTH_SHORT[date.getMonth()]} ${date.getDate()}`;
+}
 
 const sortables = new Map();
 
@@ -679,11 +695,24 @@ function initItinerary() {
       boardState.entries = entries;
       reconcileBoard();
     });
+    window.Trip.subscribeDayTitles((titles) => {
+      boardState.dayTitles = titles || {};
+      applyDayTitles();
+    });
     window.Trip.on(() => {
       reconcileBoard();
     });
   } else {
     reconcileBoard();
+  }
+}
+
+function applyDayTitles() {
+  for (let d = 1; d <= DAY_COUNT; d++) {
+    const input = document.querySelector(`.board-col-day-title[data-day="${d}"]`);
+    if (!input) continue;
+    const remote = boardState.dayTitles[String(d)] || "";
+    if (document.activeElement !== input) input.value = remote;
   }
 }
 
@@ -771,9 +800,45 @@ function buildDayColumn(dayNum) {
   const head = el("div", "board-col-head");
   head.innerHTML = `
     <span class="board-col-day-num">Day ${dayNum}</span>
+    <span class="board-col-day-date">${escapeHtml(formatDayDate(dayNum))}</span>
     <span class="board-col-count" data-count></span>
   `;
   col.appendChild(head);
+
+  const titleInput = document.createElement("input");
+  titleInput.type = "text";
+  titleInput.className = "board-col-day-title";
+  titleInput.dataset.day = String(dayNum);
+  titleInput.placeholder = "Add a title…";
+  titleInput.maxLength = 80;
+  titleInput.value = boardState.dayTitles[String(dayNum)] || "";
+  titleInput.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      titleInput.blur();
+    } else if (ev.key === "Escape") {
+      titleInput.value = boardState.dayTitles[String(dayNum)] || "";
+      titleInput.blur();
+    }
+  });
+  titleInput.addEventListener("blur", async () => {
+    const current = boardState.dayTitles[String(dayNum)] || "";
+    const next = titleInput.value.trim();
+    if (next === current) return;
+    if (!window.Trip?.configured) return;
+    if (!window.Trip.currentUser) {
+      titleInput.value = current;
+      alert("Sign in to edit day titles");
+      return;
+    }
+    try {
+      await window.Trip.setDayTitle(dayNum, next);
+    } catch (e) {
+      alert(e.message);
+      titleInput.value = current;
+    }
+  });
+  col.appendChild(titleInput);
 
   const list = el("div", "board-col-list");
   list.dataset.day = String(dayNum);
@@ -900,23 +965,38 @@ function reconcileBoard() {
   updateAuthAffordances(user);
 }
 
+function usedSlugDayMap(entries) {
+  const m = new Map();
+  for (const e of entries) {
+    if (!e.placeSlug) continue;
+    const d = Number(e.day);
+    if (!Number.isFinite(d) || d < 1 || d > DAY_COUNT) continue;
+    if (!m.has(e.placeSlug)) m.set(e.placeSlug, d);
+  }
+  return m;
+}
+
 function renderPalette() {
   const list = document.querySelector('.board-ideas-list[data-day="palette"]');
   if (!list) return;
   list.innerHTML = "";
+  const usedMap = usedSlugDayMap(boardState.entries);
   const filtered = allPlacesForItin.filter((p) => paletteMatches(p, boardState.paletteQuery));
-  for (const p of filtered) list.appendChild(renderPaletteCard(p));
+  const free = filtered.filter((p) => !usedMap.has(p.slug));
+  const used = filtered.filter((p) => usedMap.has(p.slug));
+  for (const p of free) list.appendChild(renderPaletteCard(p, undefined));
+  for (const p of used) list.appendChild(renderPaletteCard(p, usedMap.get(p.slug)));
   if (filtered.length === 0) {
     list.appendChild(el("div", "board-palette-empty", "No matches — try a different tag or name."));
   }
   const countSlot = document.querySelector("[data-ideas-count]");
   if (countSlot) {
-    countSlot.textContent = `${filtered.length} / ${allPlacesForItin.length}`;
+    countSlot.textContent = `${free.length} free · ${filtered.length} shown`;
   }
   ensurePaletteSortable(list, !!window.Trip?.currentUser);
 }
 
-function renderPaletteCard(place) {
+function renderPaletteCard(place, usedOnDay) {
   const card = el("article", "board-card board-palette-card");
   card.dataset.placeSlug = place.slug;
   const color = CITY_COLORS[place.city];
@@ -927,6 +1007,14 @@ function renderPaletteCard(place) {
     .map((t) => `<span class="board-card-tag">${escapeHtml(t)}</span>`)
     .join("");
 
+  const usedBadge = usedOnDay
+    ? `<span class="board-palette-used-badge">Day ${usedOnDay}</span>`
+    : "";
+
+  const summary = place.summary
+    ? `<p class="board-card-summary">${escapeHtml(place.summary)}</p>`
+    : "";
+
   card.innerHTML = `
     <div class="board-card-head">
       <span class="board-card-emoji">${escapeHtml(place.emoji || "📍")}</span>
@@ -934,9 +1022,17 @@ function renderPaletteCard(place) {
         <span class="board-card-title">${escapeHtml(place.name)}</span>
         <span class="board-palette-city">${escapeHtml(place.city)}</span>
       </div>
+      ${usedBadge}
     </div>
+    ${summary}
     ${tagRow ? `<div class="board-card-tags">${tagRow}</div>` : ""}
   `;
+
+  if (usedOnDay) {
+    card.classList.add("board-palette-used");
+    card.title = `Already scheduled on Day ${usedOnDay}`;
+  }
+
   return card;
 }
 
@@ -954,6 +1050,9 @@ function updateAuthAffordances(user) {
       input.disabled = false;
       input.placeholder = "+ add note…";
     }
+  }
+  for (const titleInput of document.querySelectorAll(".board-col-day-title")) {
+    titleInput.disabled = !configured || !user;
   }
 }
 
@@ -1007,6 +1106,8 @@ function ensurePaletteSortable(list, enabled) {
     dragClass: "board-card-drag",
     disabled: !enabled,
     draggable: ".board-card",
+    filter: ".board-palette-used",
+    preventOnFilter: true,
     delay: 120,
     delayOnTouchOnly: true,
     touchStartThreshold: 6,
@@ -1038,6 +1139,12 @@ async function handleDrop(evt) {
     const place = placeFor(placeSlug);
     if (!place) {
       evt.item.remove();
+      return;
+    }
+    const alreadyUsed = boardState.entries.some((e) => e.placeSlug === placeSlug);
+    if (alreadyUsed) {
+      evt.item.remove();
+      reconcileBoard();
       return;
     }
     const order = computeOrderFromDom(evt.to, evt.item);
@@ -1138,8 +1245,22 @@ function renderCard(entry, user) {
 
   card.appendChild(head);
 
+  const place = placeFor(entry.placeSlug);
+  if (place?.summary) {
+    card.appendChild(el("p", "board-card-summary", escapeHtml(place.summary)));
+  }
+
   if (entry.notes) {
     card.appendChild(el("p", "board-card-notes", escapeHtml(entry.notes)));
+  }
+
+  const tags = place?.tags?.slice(0, 4) || [];
+  if (tags.length) {
+    const tagRow = el("div", "board-card-tags");
+    for (const t of tags) {
+      tagRow.appendChild(el("span", "board-card-tag", escapeHtml(t)));
+    }
+    card.appendChild(tagRow);
   }
 
   const tickets = (entry.tickets || []).filter((t) => t && t.url);

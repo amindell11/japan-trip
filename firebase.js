@@ -179,6 +179,29 @@
     await db.doc(`itinerary/${id}`).delete();
   }
 
+  function subscribeDayTitles(cb) {
+    if (!configured) {
+      cb({});
+      return () => {};
+    }
+    return db.doc("itinerary_meta/days").onSnapshot(
+      (doc) => {
+        const data = doc.exists ? doc.data() : {};
+        cb(data.titles || {});
+      },
+      (err) => {
+        console.warn("[Trip] day-titles subscribe failed", err);
+        cb({});
+      }
+    );
+  }
+
+  async function setDayTitle(dayNum, title) {
+    if (!currentUser) throw new Error("Not signed in");
+    const patch = { titles: { [String(dayNum)]: title || "" } };
+    await db.doc("itinerary_meta/days").set(patch, { merge: true });
+  }
+
   function mountAuthSlot() {
     const slot = document.getElementById("auth-slot");
     if (!slot) return;
@@ -236,6 +259,8 @@
     addItineraryEntry,
     updateItineraryEntry,
     deleteItineraryEntry,
+    subscribeDayTitles,
+    setDayTitle,
     mountAuthSlot,
     get currentUser() {
       return currentUser;
