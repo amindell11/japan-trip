@@ -943,6 +943,7 @@ function initItinerary() {
     window.Trip.subscribeItinerary((entries) => {
       boardState.entries = entries;
       reconcileBoard();
+      runTransitMigration(entries);
     });
     window.Trip.subscribeDayTitles((titles) => {
       boardState.dayTitles = titles || {};
@@ -950,6 +951,7 @@ function initItinerary() {
     });
     window.Trip.on(() => {
       reconcileBoard();
+      runTransitMigration(boardState.entries);
     });
   } else {
     reconcileBoard();
@@ -1233,8 +1235,47 @@ function buildQuickAdd(dayNum) {
     }
   });
 
-  wrap.append(input);
+  const transitBtn = document.createElement("button");
+  transitBtn.type = "button";
+  transitBtn.className = "board-add-transit-btn";
+  transitBtn.title = "Add a transit leg";
+  transitBtn.textContent = "+ transit";
+  transitBtn.addEventListener("click", () => addEmptyTransitForDay(dayNum));
+
+  wrap.append(input, transitBtn);
   return wrap;
+}
+
+async function addEmptyTransitForDay(dayNum) {
+  if (!window.Trip?.configured || !window.Trip.currentUser) {
+    alert("Sign in to add transit");
+    return;
+  }
+  const siblings = getCardOrdersForDay(dayNum);
+  const topOrder = siblings.length ? siblings[0] - 1 : 0;
+  try {
+    const id = await window.Trip.addItineraryEntry({
+      day: dayNum,
+      order: topOrder,
+      placeSlug: null,
+      kind: "transit",
+      mode: "train",
+      from: { slug: null, label: "" },
+      to: { slug: null, label: "" },
+      departTime: "",
+      arriveTime: "",
+      line: "",
+      title: "Transit",
+      notes: "",
+      tickets: [],
+    });
+    if (id) {
+      boardState.editingId = id;
+      // The next subscribe tick will reconcile and render the editor.
+    }
+  } catch (e) {
+    alert(e.message);
+  }
 }
 
 function buildIdeasPanel() {
@@ -1638,6 +1679,7 @@ function updateAuthAffordances(user) {
   const configured = window.Trip?.configured;
   for (const wrap of document.querySelectorAll(".board-add")) {
     const input = wrap.querySelector(".board-add-input");
+    const transitBtn = wrap.querySelector(".board-add-transit-btn");
     if (!configured) {
       input.disabled = true;
       input.placeholder = "Sign-in disabled";
@@ -1648,6 +1690,7 @@ function updateAuthAffordances(user) {
       input.disabled = false;
       input.placeholder = "+ add note…";
     }
+    if (transitBtn) transitBtn.disabled = !configured || !user;
   }
   for (const titleInput of document.querySelectorAll(".board-col-day-title")) {
     titleInput.disabled = !configured || !user;
@@ -1794,6 +1837,8 @@ function computeOrderFromDom(list, droppedEl) {
 }
 
 function renderCard(entry, user) {
+  if (entry.kind === "transit") return renderTransitCard(entry, user);
+
   const card = el("article", "board-card");
   card.dataset.id = entry.id;
   card.dataset.day = String(entry.day);
@@ -1896,6 +1941,8 @@ function renderCard(entry, user) {
 }
 
 function renderCardEditor(entry) {
+  if (entry.kind === "transit") return renderTransitCardEditor(entry);
+
   const card = el("form", "board-card board-card-editing");
   card.dataset.id = entry.id;
   card.dataset.order = String(typeof entry.order === "number" ? entry.order : 0);
@@ -1982,6 +2029,267 @@ function renderCardEditor(entry) {
   return card;
 }
 
+/* ---------- Transit cards ---------- */
+
+function renderTransitCard(entry, user) {
+  const card = el("article", "board-card board-card-transit");
+  card.dataset.id = entry.id;
+  card.dataset.day = String(entry.day);
+  card.dataset.order = String(typeof entry.order === "number" ? entry.order : 0);
+  card.dataset.kind = "transit";
+
+  const stripe = entryStripeColor(entry);
+  if (stripe) card.style.setProperty("--stripe", stripe);
+
+  card.addEventListener("click", (ev) => {
+    if (ev.target.closest("a, button, input, textarea")) return;
+    const day = Number(entry.day);
+    if (boardState.activeDay !== day) {
+      setActiveDay(day);
+      setTimeout(() => pulsePin(entry.id), 80);
+    } else {
+      pulsePin(entry.id);
+    }
+  });
+
+  const mode = TRANSIT_MODE_MAP[entry.mode] || TRANSIT_MODE_MAP.train;
+  const fromLabel = entry.from?.label || "";
+  const toLabel = entry.to?.label || "";
+
+  const head = el("div", "board-card-head");
+  head.innerHTML = `<span class="board-card-emoji">${escapeHtml(mode.icon)}</span>`;
+
+  const titleWrap = el("div", "board-card-title-wrap");
+  if (fromLabel || toLabel) {
+    titleWrap.innerHTML = `
+      <span class="board-card-title board-transit-route">
+        <span class="board-transit-end ${fromLabel ? "" : "board-transit-end-empty"}">${escapeHtml(fromLabel || "—")}</span>
+        <span class="board-transit-arrow">→</span>
+        <span class="board-transit-end ${toLabel ? "" : "board-transit-end-empty"}">${escapeHtml(toLabel || "—")}</span>
+      </span>
+    `;
+  } else {
+    titleWrap.innerHTML = `<span class="board-card-title board-transit-route">${escapeHtml(mode.label)}</span>`;
+  }
+  head.appendChild(titleWrap);
+
+  if (user && entry.createdBy?.uid === user.uid) {
+    const actions = el("div", "board-card-actions");
+    const editBtn = el("button", "board-card-btn", "✎");
+    editBtn.type = "button";
+    editBtn.title = "Edit";
+    editBtn.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      boardState.editingId = entry.id;
+      reconcileBoard();
+    });
+    const delBtn = el("button", "board-card-btn board-card-btn-danger", "×");
+    delBtn.type = "button";
+    delBtn.title = "Delete";
+    delBtn.addEventListener("click", async (ev) => {
+      ev.stopPropagation();
+      if (!confirm("Delete this transit?")) return;
+      try {
+        await window.Trip.deleteItineraryEntry(entry.id);
+      } catch (e) {
+        alert(e.message);
+      }
+    });
+    actions.append(editBtn, delBtn);
+    head.appendChild(actions);
+  }
+  card.appendChild(head);
+
+  const meta = buildTransitMetaLine(entry);
+  if (meta) {
+    const metaEl = el("div", "board-transit-meta");
+    metaEl.innerHTML = meta;
+    card.appendChild(metaEl);
+  }
+
+  if (entry.notes) {
+    card.appendChild(el("p", "board-card-notes", escapeHtml(entry.notes)));
+  }
+
+  const tickets = (entry.tickets || []).filter((t) => t && t.url);
+  if (tickets.length) {
+    const ul = el("ul", "board-card-tickets");
+    for (const t of tickets) {
+      const li = document.createElement("li");
+      const a = document.createElement("a");
+      a.href = t.url;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = (t.label || "Ticket") + " ↗";
+      a.addEventListener("mousedown", (ev) => ev.stopPropagation());
+      li.appendChild(a);
+      ul.appendChild(li);
+    }
+    card.appendChild(ul);
+  }
+
+  return card;
+}
+
+function renderTransitCardEditor(entry) {
+  const card = el("form", "board-card board-card-editing board-card-transit-editing");
+  card.dataset.id = entry.id;
+  card.dataset.order = String(typeof entry.order === "number" ? entry.order : 0);
+  card.dataset.kind = "transit";
+
+  const tickets = (entry.tickets || []).map((t) => ({
+    label: t.label || "",
+    url: t.url || "",
+  }));
+  if (tickets.length === 0) tickets.push({ label: "", url: "" });
+
+  const datalistId = `transit-places-${entry.id}`;
+  const optionsHtml = (allPlacesForItin || [])
+    .map((p) => `<option value="${escapeHtml(p.name)}"></option>`)
+    .join("");
+
+  const modeOptions = TRANSIT_MODES
+    .map(
+      (m) =>
+        `<option value="${m.value}" ${entry.mode === m.value ? "selected" : ""}>${m.icon} ${m.label}</option>`
+    )
+    .join("");
+
+  card.innerHTML = `
+    <datalist id="${datalistId}">${optionsHtml}</datalist>
+    <select class="board-transit-edit-mode" aria-label="Mode">${modeOptions}</select>
+    <div class="board-transit-edit-row">
+      <input class="board-transit-edit-from" list="${datalistId}" type="text" placeholder="From" value="${escapeHtml(entry.from?.label || "")}" />
+      <span class="board-transit-edit-arrow" aria-hidden="true">→</span>
+      <input class="board-transit-edit-to" list="${datalistId}" type="text" placeholder="To" value="${escapeHtml(entry.to?.label || "")}" />
+    </div>
+    <div class="board-transit-edit-row">
+      <input class="board-transit-edit-time" type="time" value="${escapeHtml(entry.departTime || "")}" aria-label="Depart" />
+      <span class="board-transit-edit-arrow" aria-hidden="true">→</span>
+      <input class="board-transit-edit-time" type="time" value="${escapeHtml(entry.arriveTime || "")}" aria-label="Arrive" />
+    </div>
+    <input class="board-transit-edit-line" type="text" placeholder="Line / number (e.g. Nozomi 7)" value="${escapeHtml(entry.line || "")}" />
+    <textarea class="board-edit-notes" rows="2" placeholder="Notes (optional)">${escapeHtml(entry.notes || "")}</textarea>
+    <div class="board-edit-tickets"></div>
+    <button type="button" class="board-edit-add-ticket">+ link</button>
+    <div class="board-edit-actions">
+      <button type="button" class="board-card-btn board-edit-cancel">Cancel</button>
+      <button type="submit" class="board-card-btn board-edit-save">Save</button>
+    </div>
+  `;
+
+  const ticketHost = card.querySelector(".board-edit-tickets");
+  const renderTickets = () => {
+    ticketHost.innerHTML = "";
+    tickets.forEach((t, i) => {
+      const row = el("div", "board-edit-ticket-row");
+      row.innerHTML = `
+        <input data-i="${i}" data-k="label" type="text" placeholder="Label" value="${escapeHtml(t.label)}" />
+        <input data-i="${i}" data-k="url" type="url" placeholder="https://…" value="${escapeHtml(t.url)}" />
+        <button type="button" class="board-card-btn board-card-btn-danger" data-rm="${i}">×</button>
+      `;
+      ticketHost.appendChild(row);
+    });
+  };
+  renderTickets();
+
+  ticketHost.addEventListener("input", (ev) => {
+    const i = ev.target.dataset.i;
+    const k = ev.target.dataset.k;
+    if (i != null && k) tickets[Number(i)][k] = ev.target.value;
+  });
+  ticketHost.addEventListener("click", (ev) => {
+    const rm = ev.target.dataset.rm;
+    if (rm != null) {
+      tickets.splice(Number(rm), 1);
+      if (tickets.length === 0) tickets.push({ label: "", url: "" });
+      renderTickets();
+    }
+  });
+  card.querySelector(".board-edit-add-ticket").addEventListener("click", () => {
+    tickets.push({ label: "", url: "" });
+    renderTickets();
+  });
+
+  card.querySelector(".board-edit-cancel").addEventListener("click", () => {
+    boardState.editingId = null;
+    reconcileBoard();
+  });
+
+  card.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const mode = card.querySelector(".board-transit-edit-mode").value;
+    const fromLabel = card.querySelector(".board-transit-edit-from").value.trim();
+    const toLabel = card.querySelector(".board-transit-edit-to").value.trim();
+    const [departInput, arriveInput] = card.querySelectorAll(".board-transit-edit-time");
+    const departTime = departInput?.value || "";
+    const arriveTime = arriveInput?.value || "";
+    const line = card.querySelector(".board-transit-edit-line").value.trim();
+    const notes = card.querySelector(".board-edit-notes").value.trim();
+    const cleanTickets = tickets
+      .map((t) => ({ label: t.label.trim(), url: t.url.trim() }))
+      .filter((t) => t.url);
+    try {
+      await window.Trip.updateItineraryEntry(entry.id, {
+        kind: "transit",
+        mode,
+        from: { slug: slugForPlaceName(fromLabel), label: fromLabel },
+        to: { slug: slugForPlaceName(toLabel), label: toLabel },
+        departTime,
+        arriveTime,
+        line,
+        notes,
+        tickets: cleanTickets,
+        title: transitTitleFromFields(mode, fromLabel, toLabel),
+        placeSlug: null,
+      });
+      boardState.editingId = null;
+    } catch (e) {
+      alert(e.message);
+    }
+  });
+
+  return card;
+}
+
+async function runTransitMigration(entries) {
+  if (boardState.transitMigrationRan) return;
+  if (!window.Trip?.configured || !window.Trip.currentUser) return;
+  const myUid = window.Trip.currentUser.uid;
+  const candidates = entries.filter(
+    (e) =>
+      e.kind == null &&
+      !e.placeSlug &&
+      e.createdBy?.uid === myUid &&
+      TRANSIT_KNOWN_MIGRATIONS[e.title]
+  );
+  if (candidates.length === 0) {
+    boardState.transitMigrationRan = true;
+    return;
+  }
+  boardState.transitMigrationRan = true;
+  for (const entry of candidates) {
+    const recipe = TRANSIT_KNOWN_MIGRATIONS[entry.title];
+    const fromLabel = recipe.fromLabel || "";
+    const toLabel = recipe.toLabel || "";
+    try {
+      await window.Trip.updateItineraryEntry(entry.id, {
+        kind: "transit",
+        mode: recipe.mode,
+        from: { slug: slugForPlaceName(fromLabel), label: fromLabel },
+        to: { slug: slugForPlaceName(toLabel), label: toLabel },
+        departTime: recipe.departTime || "",
+        arriveTime: recipe.arriveTime || "",
+        line: recipe.line || "",
+        title: transitTitleFromFields(recipe.mode, fromLabel, toLabel),
+      });
+      console.log(`[trip] migrated transit: ${entry.title}`);
+    } catch (e) {
+      console.warn(`[trip] transit migration failed for "${entry.title}"`, e);
+    }
+  }
+}
+
 /* ---------- Card hover popover ---------- */
 
 const popoverState = {
@@ -2037,6 +2345,37 @@ function popoverContextForCard(card) {
 
 function popoverHTMLForCard(card) {
   const { entry, hit, place } = popoverContextForCard(card);
+
+  if (entry?.kind === "transit") {
+    const mode = TRANSIT_MODE_MAP[entry.mode] || TRANSIT_MODE_MAP.train;
+    const fromLabel = entry.from?.label || "—";
+    const toLabel = entry.to?.label || "—";
+    const meta = buildTransitMetaLine(entry);
+    const hasNotes = entry.notes && entry.notes.trim();
+    const ticketRow = (entry.tickets || [])
+      .filter((t) => t && t.url)
+      .map(
+        (t) =>
+          `<a href="${escapeHtml(t.url)}" target="_blank" rel="noopener">${escapeHtml(
+            t.label || "Link"
+          )}</a>`
+      )
+      .join("");
+    return `
+      <div class="board-popover-body">
+        <div class="board-popover-head">
+          <span class="board-popover-emoji">${escapeHtml(mode.icon)}</span>
+          <div class="board-popover-title-wrap">
+            <span class="board-popover-title">${escapeHtml(fromLabel)} → ${escapeHtml(toLabel)}</span>
+            <span class="board-popover-sub">Day ${entry.day} · ${escapeHtml(mode.label)}</span>
+          </div>
+        </div>
+        ${meta ? `<div class="board-popover-transit-meta">${meta}</div>` : ""}
+        ${hasNotes ? `<p class="board-popover-summary">${escapeHtml(entry.notes)}</p>` : ""}
+        ${ticketRow ? `<div class="board-popover-links">${ticketRow}</div>` : ""}
+      </div>
+    `;
+  }
 
   if (!place) {
     if (!entry) return null;

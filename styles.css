@@ -1461,13 +1461,115 @@ a.board-card-title-link:hover { text-decoration: underline; }
 
 .board-card-tickets a:hover { text-decoration: underline; }
 
+/* Transit cards */
+.board-card-transit {
+  background: linear-gradient(180deg, #fafbfc, var(--surface) 65%);
+}
+
+.board-transit-route {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.board-transit-end {
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.board-transit-end-empty {
+  color: #bcbcbc;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.board-transit-arrow {
+  color: #999;
+  font-weight: 500;
+}
+
+.board-transit-meta {
+  font-size: 0.74rem;
+  color: #666;
+  letter-spacing: 0.01em;
+  padding-left: 1.45rem; /* align under the title, past the emoji */
+}
+
+.board-transit-dot {
+  color: #c0c0c0;
+  margin: 0 0.15rem;
+}
+
+.board-transit-dur {
+  color: #999;
+}
+
+/* Transit editor */
+.board-card-transit-editing .board-transit-edit-mode {
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--fg);
+}
+
+.board-transit-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.board-transit-edit-row > input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.3rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--fg);
+}
+
+.board-transit-edit-row > input[type="time"] {
+  flex: 0 0 auto;
+}
+
+.board-transit-edit-row .board-transit-edit-arrow {
+  color: #999;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.board-transit-edit-line {
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.3rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--fg);
+}
+
+.board-popover-transit-meta {
+  font-size: 0.82rem;
+  color: #444;
+  margin-top: 0.2rem;
+}
+
 /* Quick-add */
 .board-add {
   padding: 0.2rem 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
 }
 
 .board-add-input {
-  width: 100%;
+  flex: 1;
   min-width: 0;
   border: 1px dashed transparent;
   background: transparent;
@@ -1496,6 +1598,32 @@ a.board-card-title-link:hover { text-decoration: underline; }
 }
 
 .board-add-input:disabled { cursor: not-allowed; }
+
+.board-add-transit-btn {
+  flex-shrink: 0;
+  font: inherit;
+  font-size: 0.74rem;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.board-add-transit-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  border-style: solid;
+  background: var(--accent-soft);
+}
+
+.board-add-transit-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 
 /* Ideas palette (bottom panel) */
 .board-ideas {
@@ -1961,6 +2089,11 @@ body[data-view="itinerary"] .board-ideas-head {
   flex-direction: column;
   align-items: stretch;
   gap: 0.45rem;
+}
+
+body[data-view="itinerary"] .board-ideas-search {
+  flex: 0 0 auto;
+  width: 100%;
 }
 
 body[data-view="itinerary"] .board-ideas-list {

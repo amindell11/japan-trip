@@ -151,7 +151,7 @@
   async function addItineraryEntry(data) {
     if (!currentUser) throw new Error("Not signed in");
     const ts = firebase.firestore.FieldValue.serverTimestamp();
-    await db.collection("itinerary").add({
+    const ref = await db.collection("itinerary").add({
       ...data,
       createdBy: {
         uid: currentUser.uid,
@@ -161,6 +161,7 @@
       createdAt: ts,
       updatedAt: ts,
     });
+    return ref.id;
   }
 
   async function updateItineraryEntry(id, patch) {
