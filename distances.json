@@ -1,0 +1,42 @@
+{
+  "akihabara::ueno-park": {
+    "meters": 1702,
+    "walkSec": 1216
+  },
+  "daikanyama::shibuya-crossing": {
+    "meters": 2068,
+    "walkSec": 1477
+  },
+  "daikanyama::shibuya-sky": {
+    "meters": 1584,
+    "walkSec": 1131
+  },
+  "gion-district::samurai-kembu-kyoto": {
+    "meters": 832,
+    "walkSec": 595
+  },
+  "harajuku-takeshita-street::meiji-shrine": {
+    "meters": 2150,
+    "walkSec": 1535
+  },
+  "harajuku-takeshita-street::shibuya-crossing": {
+    "meters": 1421,
+    "walkSec": 1015
+  },
+  "harajuku-takeshita-street::shibuya-sky": {
+    "meters": 1826,
+    "walkSec": 1304
+  },
+  "koenji::nakano": {
+    "meters": 1792,
+    "walkSec": 1280
+  },
+  "samurai-experience::shinjuku-golden-gai": {
+    "meters": 0,
+    "walkSec": 0
+  },
+  "shibuya-crossing::shibuya-sky": {
+    "meters": 703,
+    "walkSec": 502
+  }
+}
