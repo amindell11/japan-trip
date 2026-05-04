@@ -2029,6 +2029,7 @@ function ensureDaySortable(list, enabled) {
     disabled: !enabled,
     draggable: ".board-card",
     filter: ".board-card-editing, .board-col-empty",
+    preventOnFilter: false,
     delay: 120,
     delayOnTouchOnly: true,
     touchStartThreshold: 6,
