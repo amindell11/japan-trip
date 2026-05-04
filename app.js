@@ -1335,6 +1335,9 @@ function buildTransitMetaLine(entry) {
   } else if (typeof entry.durationMin === "number" && entry.durationMin > 0) {
     parts.push(`≈ ${escapeHtml(formatDurationMin(entry.durationMin))}`);
   }
+  if (typeof entry.distKm === "number" && entry.distKm > 0) {
+    parts.push(`<span class="board-transit-dist">${Math.round(entry.distKm).toLocaleString()} km</span>`);
+  }
   if (typeof entry.costYen === "number" && entry.costYen > 0) {
     const usd = yenToUsdLabel(entry.costYen);
     if (usd) parts.push(`<span class="board-transit-cost">≈ ${escapeHtml(usd)}</span>`);
