@@ -1826,6 +1826,27 @@ a.board-card-title-link:hover { text-decoration: underline; }
   font-variant-numeric: tabular-nums;
 }
 
+.board-ideas-export-btn {
+  flex-shrink: 0;
+  font: inherit;
+  font-size: 0.74rem;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.board-ideas-export-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  border-style: solid;
+  background: var(--accent-soft);
+}
+
 .board-ideas-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));

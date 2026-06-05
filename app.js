@@ -1581,6 +1581,117 @@ async function addEmptyTransitForDay(dayNum) {
   }
 }
 
+function entryToMarkdown(entry) {
+  const emoji = entryEmoji(entry);
+  const lines = [];
+  const validTime = /^\d{1,2}:\d{2}$/;
+
+  if (entry.kind === "transit") {
+    const fromLabel = entry.from?.label || "";
+    const toLabel = entry.to?.label || "";
+    const title = transitTitleFromFields(entry.mode, fromLabel, toLabel);
+    const meta = [];
+    if (entry.line) meta.push(entry.line);
+    const dep = entry.departTime || "";
+    const arr = entry.arriveTime || "";
+    if (validTime.test(dep) && validTime.test(arr)) {
+      const dur = transitDurationMin(dep, arr);
+      meta.push(dur ? `${dep} → ${arr} (${formatDurationMin(dur)})` : `${dep} → ${arr}`);
+    } else if (validTime.test(dep)) {
+      meta.push(`dep ${dep}`);
+    } else if (validTime.test(arr)) {
+      meta.push(`arr ${arr}`);
+    } else if (typeof entry.durationMin === "number" && entry.durationMin > 0) {
+      meta.push(`≈ ${formatDurationMin(entry.durationMin)}`);
+    }
+    if (typeof entry.distKm === "number" && entry.distKm > 0) {
+      meta.push(`${Math.round(entry.distKm).toLocaleString()} km`);
+    }
+    if (typeof entry.costYen === "number" && entry.costYen > 0) {
+      const usd = yenToUsdLabel(entry.costYen);
+      if (usd) meta.push(`≈ ${usd}`);
+    }
+    const metaSuffix = meta.length ? ` — ${meta.join(" · ")}` : "";
+    lines.push(`- ${emoji} **${title}**${metaSuffix}`);
+  } else if (entry.kind === "custom") {
+    const sub = customLocationSubLabel(entry);
+    const subSuffix = sub ? ` — ${sub}` : "";
+    lines.push(`- ${emoji} **${entry.title || "Untitled"}**${subSuffix}`);
+  } else {
+    const place = placeFor(entry.placeSlug);
+    const subSuffix = place?.city ? ` — ${place.city}` : "";
+    lines.push(`- ${emoji} **${entry.title || "Untitled"}**${subSuffix}`);
+  }
+
+  if (entry.notes && entry.notes.trim()) {
+    for (const line of entry.notes.trim().split(/\r?\n/)) {
+      lines.push(`  ${line}`);
+    }
+  }
+
+  const tickets = (entry.tickets || []).filter((t) => t && t.url);
+  for (const t of tickets) {
+    const label = (t.label || "").trim() || "Link";
+    lines.push(`  - [${label}](${t.url})`);
+  }
+
+  return lines.join("\n");
+}
+
+function buildItineraryMarkdown() {
+  const byDay = groupEntriesByDay(boardState.entries);
+  const startDate = dateForDay(1);
+  const endDate = dateForDay(DAY_COUNT);
+  const fmtFullDate = (d) =>
+    `${MONTH_SHORT[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+
+  const out = [];
+  out.push("# Japan Trip");
+  out.push("");
+  out.push(
+    `_${fmtFullDate(startDate)} – ${fmtFullDate(endDate)} · ${DAY_COUNT} days_`
+  );
+  out.push("");
+
+  for (let d = 1; d <= DAY_COUNT; d++) {
+    const entries = byDay.get(d) || [];
+    const title = (boardState.dayTitles[String(d)] || "").trim();
+    const dateLabel = formatDayDate(d).replace(" · ", ", ");
+    const headSuffix = title ? ` — ${title}` : "";
+    out.push(`## Day ${d} · ${dateLabel}${headSuffix}`);
+    out.push("");
+    if (entries.length === 0) {
+      out.push("_(no cards yet)_");
+      out.push("");
+    } else {
+      for (const e of entries) {
+        out.push(entryToMarkdown(e));
+        out.push("");
+      }
+    }
+  }
+
+  return out.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd() + "\n";
+}
+
+function downloadItineraryMarkdown() {
+  const md = buildItineraryMarkdown();
+  const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const today = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  const stamp = `${today.getFullYear()}${pad(today.getMonth() + 1)}${pad(today.getDate())}`;
+  a.href = url;
+  a.download = `japan-trip-itinerary-${stamp}.md`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, 0);
+}
+
 function buildIdeasPanel() {
   const section = el("section", "board-ideas");
   section.innerHTML = `
@@ -1590,6 +1701,7 @@ function buildIdeasPanel() {
       <span class="board-ideas-sub">drag a place onto a day</span>
       <input class="board-ideas-search" type="search" placeholder="Search name, city, or tag…" aria-label="Search places" />
       <span class="board-ideas-count" data-ideas-count></span>
+      <button class="board-ideas-export-btn" type="button" title="Download the full itinerary as a Markdown file">⬇ Export .md</button>
     </div>
     <div class="board-ideas-list" data-day="palette"></div>
   `;
@@ -1598,6 +1710,14 @@ function buildIdeasPanel() {
   search.addEventListener("input", () => {
     boardState.paletteQuery = search.value;
     renderPalette();
+  });
+  const exportBtn = section.querySelector(".board-ideas-export-btn");
+  exportBtn.addEventListener("click", () => {
+    try {
+      downloadItineraryMarkdown();
+    } catch (e) {
+      alert("Export failed: " + (e?.message || e));
+    }
   });
   return section;
 }
