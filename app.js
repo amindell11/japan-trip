@@ -901,11 +901,15 @@ const boardState = {
   editingId: null,
   dragging: false,
   paletteQuery: "",
+  archivedSlugs: new Set(),
+  showArchived: false,
   dayTitles: {},
   activeDay: null,
   miniMap: null,
   miniMapLayers: null,
   pinByEntryId: new Map(),
+  previewSlug: null,
+  previewMarker: null,
   pulseTimer: null,
   transitMigrationRan: false,
   mapPanelHeight: loadSavedMapPanelHeight(),
@@ -996,6 +1000,10 @@ function initItinerary() {
     window.Trip.subscribeDayTitles((titles) => {
       boardState.dayTitles = titles || {};
       applyDayTitles();
+    });
+    window.Trip.subscribeArchived((slugs) => {
+      boardState.archivedSlugs = new Set(Object.keys(slugs || {}));
+      renderPalette();
     });
     window.Trip.on(() => {
       reconcileBoard();
@@ -1797,6 +1805,7 @@ function buildIdeasPanel() {
       <span class="board-ideas-sub">drag a place onto a day</span>
       <input class="board-ideas-search" type="search" placeholder="Search name, city, or tag…" aria-label="Search places" />
       <span class="board-ideas-count" data-ideas-count></span>
+      <button class="board-ideas-archived-toggle" type="button" title="Show or hide archived ideas" hidden>🗄 Hidden</button>
       <button class="board-ideas-export-btn" type="button" title="Download the full itinerary as a Markdown file">⬇ Export .md</button>
     </div>
     <div class="board-ideas-list" data-day="palette"></div>
@@ -1805,6 +1814,11 @@ function buildIdeasPanel() {
   search.value = boardState.paletteQuery;
   search.addEventListener("input", () => {
     boardState.paletteQuery = search.value;
+    renderPalette();
+  });
+  const archivedToggle = section.querySelector(".board-ideas-archived-toggle");
+  archivedToggle.addEventListener("click", () => {
+    boardState.showArchived = !boardState.showArchived;
     renderPalette();
   });
   const exportBtn = section.querySelector(".board-ideas-export-btn");
@@ -1923,6 +1937,7 @@ function renderDistanceSegment(prev, next) {
 function setActiveDay(dayNum) {
   if (dayNum === boardState.activeDay) return;
   boardState.activeDay = dayNum;
+  boardState.previewSlug = null;
   const panel = document.querySelector(".board-map-panel");
   if (panel) {
     panel.dataset.collapsed = dayNum == null ? "true" : "false";
@@ -1981,6 +1996,15 @@ function renderMiniMap() {
   const host = panel.querySelector("[data-map-host]");
   const day = boardState.activeDay;
   boardState.pinByEntryId = new Map();
+  boardState.previewMarker = null;
+
+  // A previewed idea that has since been scheduled no longer needs a preview.
+  if (
+    boardState.previewSlug &&
+    boardState.entries.some((e) => e.placeSlug === boardState.previewSlug)
+  ) {
+    boardState.previewSlug = null;
+  }
 
   if (day == null) {
     panel.dataset.collapsed = "true";
@@ -1996,18 +2020,23 @@ function renderMiniMap() {
   const entries = (groupEntriesByDay(boardState.entries).get(day) || []).filter(
     (e) => entryCoords(e) != null
   );
+  const previewPlace = boardState.previewSlug
+    ? placeFor(boardState.previewSlug)
+    : null;
+  const preview = previewPlace?.coords ? previewPlace : null;
   const titleText = boardState.dayTitles[String(day)];
   const label = titleText
     ? `Day ${day} · ${titleText}`
     : `Day ${day} · ${formatDayDate(day)}`;
   if (status) {
-    status.textContent =
+    const base =
       entries.length === 0
         ? `${label} — no places yet`
         : `${label} — ${entries.length} stop${entries.length > 1 ? "s" : ""}`;
+    status.textContent = preview ? `${base} · previewing ${preview.name}` : base;
   }
 
-  if (entries.length === 0) {
+  if (entries.length === 0 && !preview) {
     if (host) host.style.display = "none";
     if (empty) empty.style.display = "flex";
     return;
@@ -2054,12 +2083,47 @@ function renderMiniMap() {
     }).addTo(boardState.miniMapLayers);
   }
 
-  const bounds = L.latLngBounds(points).pad(0.2);
+  const boundsPoints = [...points];
+  if (preview) {
+    const color = CITY_COLORS[preview.city] || "#2e7d4f";
+    const icon = L.divIcon({
+      className: "board-map-pin-icon",
+      html: `<span class="board-map-pin is-preview" style="--pin-color:${color}">+</span>`,
+      iconSize: [28, 28],
+      iconAnchor: [14, 28],
+    });
+    const marker = L.marker(preview.coords, { icon });
+    marker.bindTooltip(`${preview.name} — idea (click pin to dismiss)`, {
+      direction: "top",
+      offset: [0, -22],
+    });
+    marker.on("click", () => {
+      boardState.previewSlug = null;
+      renderMiniMap();
+    });
+    boardState.miniMapLayers.addLayer(marker);
+    boardState.previewMarker = marker;
+    boundsPoints.push(preview.coords);
+  }
+
+  const bounds = L.latLngBounds(boundsPoints).pad(0.2);
   // Panel height transitions over ~180ms; defer size + bounds until it settles.
   setTimeout(() => {
     map.invalidateSize();
     map.fitBounds(bounds, { animate: true, maxZoom: 16 });
   }, 220);
+}
+
+function pulsePreviewPin() {
+  const marker = boardState.previewMarker;
+  if (!marker) return;
+  const map = boardState.miniMap;
+  if (map) map.panTo(marker.getLatLng(), { animate: true });
+  const icon = marker._icon;
+  if (icon) {
+    icon.classList.add("is-pulsing");
+    setTimeout(() => icon.classList.remove("is-pulsing"), 900);
+  }
 }
 
 function pulsePin(entryId) {
@@ -2083,6 +2147,56 @@ function focusCardForEntry(entryId) {
   boardState.pulseTimer = setTimeout(() => {
     card.classList.remove("is-pulsing");
   }, 900);
+}
+
+// Scheduled itinerary entries within walking distance of a point. Used for
+// the "close to N" badges on idea cards and itinerary cards. Only entries
+// that resolve to coords count (transit legs never do).
+function nearbyScheduledEntries(slug, coords, excludeEntryId) {
+  if (!coords) return [];
+  const out = [];
+  for (const e of boardState.entries) {
+    if (excludeEntryId && e.id === excludeEntryId) continue;
+    if (slug && e.placeSlug === slug) continue; // same place — not a neighbor
+    const eCoords = entryCoords(e);
+    if (!eCoords) continue;
+    const info = walkInfoForPair(slug, e.placeSlug, coords, eCoords);
+    if (!info) continue;
+    const km = info.meters / 1000;
+    if (km <= WALK_MAX_KM) out.push({ entry: e, km, walkSec: info.walkSec });
+  }
+  out.sort((a, b) => a.km - b.km);
+  return out;
+}
+
+function setNearHighlight(entryIds, days, on) {
+  for (const id of entryIds) {
+    const cardEl = document.querySelector(`.board-card[data-id="${id}"]`);
+    if (cardEl) cardEl.classList.toggle("board-near-hit", on);
+  }
+  for (const d of days) {
+    const col = document.querySelector(`.board-col-day[data-day="${d}"]`);
+    if (col) col.classList.toggle("board-near-hit-day", on);
+  }
+}
+
+function buildNearBadge(nearby) {
+  if (!nearby.length) return null;
+  const badge = el("span", "board-near-badge", `🚶 ${nearby.length}`);
+  const lines = nearby.map((n) => {
+    const mins = Math.max(1, Math.round(n.walkSec / 60));
+    return `${n.entry.title} — Day ${n.entry.day} · ${mins} min walk`;
+  });
+  badge.title =
+    `Close to ${nearby.length} scheduled place${nearby.length > 1 ? "s" : ""}:\n` +
+    lines.join("\n");
+  const ids = nearby.map((n) => n.entry.id);
+  const days = [...new Set(nearby.map((n) => Number(n.entry.day)))];
+  badge.addEventListener("mouseenter", () => setNearHighlight(ids, days, true));
+  badge.addEventListener("mouseleave", () => setNearHighlight(ids, days, false));
+  badge.addEventListener("mousedown", (ev) => ev.stopPropagation());
+  badge.addEventListener("click", (ev) => ev.stopPropagation());
+  return badge;
 }
 
 function usedSlugDayMap(entries) {
@@ -2138,9 +2252,12 @@ function renderPalette() {
   if (!list) return;
   list.innerHTML = "";
   const usedMap = usedSlugDayMap(boardState.entries);
+  const archivedSet = boardState.archivedSlugs;
   const filtered = allPlacesForItin.filter((p) => paletteMatches(p, boardState.paletteQuery));
+  const active = filtered.filter((p) => !archivedSet.has(p.slug));
+  const archived = filtered.filter((p) => archivedSet.has(p.slug));
   const proxCtx = activeDayProximityContext();
-  const tieredFree = filtered
+  const tieredFree = active
     .filter((p) => !usedMap.has(p.slug))
     .map((p) => ({ p, tier: proximityTierFor(p, proxCtx) }));
   // Sort by tier so "near" floats to the top when a day is pinned.
@@ -2148,27 +2265,45 @@ function renderPalette() {
     const order = { near: 0, mid: 1, far: 2 };
     tieredFree.sort((a, b) => (order[a.tier] ?? 0) - (order[b.tier] ?? 0));
   }
-  const used = filtered.filter((p) => usedMap.has(p.slug));
+  const used = active.filter((p) => usedMap.has(p.slug));
   for (const { p, tier } of tieredFree) {
     list.appendChild(renderPaletteCard(p, undefined, tier));
   }
   for (const p of used) list.appendChild(renderPaletteCard(p, usedMap.get(p.slug), null));
-  if (filtered.length === 0) {
+  if (boardState.showArchived) {
+    for (const p of archived) {
+      list.appendChild(renderPaletteCard(p, usedMap.get(p.slug), null, true));
+    }
+  }
+  const renderedCount =
+    tieredFree.length + used.length + (boardState.showArchived ? archived.length : 0);
+  if (renderedCount === 0) {
     list.appendChild(el("div", "board-palette-empty", "No matches — try a different tag or name."));
   }
   const countSlot = document.querySelector("[data-ideas-count]");
   if (countSlot) {
+    const shown = active.length;
+    const hiddenSuffix = archived.length ? ` · ${archived.length} hidden` : "";
     if (proxCtx) {
       const near = tieredFree.filter((t) => t.tier === "near").length;
-      countSlot.textContent = `${near} near · ${tieredFree.length} free · ${filtered.length} shown`;
+      countSlot.textContent = `${near} near · ${tieredFree.length} free · ${shown} shown${hiddenSuffix}`;
     } else {
-      countSlot.textContent = `${tieredFree.length} free · ${filtered.length} shown`;
+      countSlot.textContent = `${tieredFree.length} free · ${shown} shown${hiddenSuffix}`;
     }
+  }
+  const toggle = document.querySelector(".board-ideas-archived-toggle");
+  if (toggle) {
+    const totalArchived = allPlacesForItin.filter((p) => archivedSet.has(p.slug)).length;
+    toggle.hidden = totalArchived === 0 && !boardState.showArchived;
+    toggle.textContent = boardState.showArchived
+      ? `🗄 Hide ${totalArchived} hidden`
+      : `🗄 ${totalArchived} hidden`;
+    toggle.classList.toggle("active", boardState.showArchived);
   }
   ensurePaletteSortable(list, !!window.Trip?.currentUser);
 }
 
-function renderPaletteCard(place, usedOnDay, proxTier) {
+function renderPaletteCard(place, usedOnDay, proxTier, archived) {
   const card = el("article", "board-card board-palette-card");
   card.dataset.placeSlug = place.slug;
   if (proxTier === "mid") card.classList.add("board-palette-mid");
@@ -2185,6 +2320,13 @@ function renderPaletteCard(place, usedOnDay, proxTier) {
     ? `<span class="board-palette-used-badge">Day ${usedOnDay}</span>`
     : "";
 
+  const canArchive = !!window.Trip?.currentUser;
+  const hideBtnHtml = canArchive
+    ? `<button class="board-palette-hide-btn" type="button" title="${
+        archived ? "Restore to ideas" : "Hide from ideas"
+      }">${archived ? "↩" : "🗄"}</button>`
+    : "";
+
   const summary = place.summary
     ? `<p class="board-card-summary">${escapeHtml(place.summary)}</p>`
     : "";
@@ -2197,14 +2339,50 @@ function renderPaletteCard(place, usedOnDay, proxTier) {
         <span class="board-palette-city">${escapeHtml(place.city)}</span>
       </div>
       ${usedBadge}
+      ${hideBtnHtml}
     </div>
     ${summary}
     ${tagRow ? `<div class="board-card-tags">${tagRow}</div>` : ""}
   `;
 
+  const nearby = nearbyScheduledEntries(place.slug, place.coords, null);
+  const nearBadge = buildNearBadge(nearby);
+  if (nearBadge) {
+    const head = card.querySelector(".board-card-head");
+    const titleWrap = head.querySelector(".board-card-title-wrap");
+    head.insertBefore(nearBadge, titleWrap.nextSibling);
+  }
+
+  // While a day is pinned, clicking an idea previews it on the mini map
+  // (a temporary pin alongside that day's stops). Click again to dismiss.
+  card.addEventListener("click", (ev) => {
+    if (ev.target.closest("a, button, input")) return;
+    if (boardState.activeDay == null || !place.coords) return;
+    boardState.previewSlug =
+      boardState.previewSlug === place.slug ? null : place.slug;
+    renderMiniMap();
+    if (boardState.previewSlug) setTimeout(pulsePreviewPin, 300);
+  });
+
   if (usedOnDay) {
     card.classList.add("board-palette-used");
     card.title = `Already scheduled on Day ${usedOnDay}`;
+  }
+  if (archived) {
+    card.classList.add("board-palette-archived");
+    card.title = "Hidden from ideas";
+  }
+
+  const hideBtn = card.querySelector(".board-palette-hide-btn");
+  if (hideBtn) {
+    hideBtn.addEventListener("click", async (ev) => {
+      ev.stopPropagation();
+      try {
+        await window.Trip.setPlaceArchived(place.slug, !archived);
+      } catch (e) {
+        alert("Could not update: " + (e?.message || e));
+      }
+    });
   }
 
   return card;
@@ -2286,8 +2464,8 @@ function ensurePaletteSortable(list, enabled) {
     dragClass: "board-card-drag",
     disabled: !enabled,
     draggable: ".board-card",
-    filter: ".board-palette-used",
-    preventOnFilter: true,
+    filter: ".board-palette-used, .board-palette-archived, .board-palette-hide-btn",
+    preventOnFilter: false,
     delay: 120,
     delayOnTouchOnly: true,
     touchStartThreshold: 6,
@@ -2412,6 +2590,11 @@ function renderCard(entry, user) {
     titleWrap.appendChild(el("span", "board-card-title", escapeHtml(entry.title)));
   }
   head.appendChild(titleWrap);
+
+  const nearBadge = buildNearBadge(
+    nearbyScheduledEntries(entry.placeSlug, entryCoords(entry), entry.id)
+  );
+  if (nearBadge) head.appendChild(nearBadge);
 
   if (user && entry.createdBy?.uid === user.uid) {
     const actions = el("div", "board-card-actions");
@@ -2618,6 +2801,11 @@ function renderCustomCard(entry, user) {
     titleWrap.appendChild(subEl);
   }
   head.appendChild(titleWrap);
+
+  const nearBadge = buildNearBadge(
+    nearbyScheduledEntries(entry.placeSlug, entryCoords(entry), entry.id)
+  );
+  if (nearBadge) head.appendChild(nearBadge);
 
   if (user && entry.createdBy?.uid === user.uid) {
     const actions = el("div", "board-card-actions");

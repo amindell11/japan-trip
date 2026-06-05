@@ -84,7 +84,7 @@ service cloud.firestore {
     }
 
     match /itinerary_meta/{doc} {
-      // Shared trip metadata (editable day titles).
+      // Shared trip metadata (editable day titles, archived ideas).
       allow read: if true;
       allow write: if request.auth != null;
     }

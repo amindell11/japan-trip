@@ -203,6 +203,33 @@
     await db.doc("itinerary_meta/days").set(patch, { merge: true });
   }
 
+  function subscribeArchived(cb) {
+    if (!configured) {
+      cb({});
+      return () => {};
+    }
+    return db.doc("itinerary_meta/archived").onSnapshot(
+      (doc) => {
+        const data = doc.exists ? doc.data() : {};
+        cb(data.slugs || {});
+      },
+      (err) => {
+        console.warn("[Trip] archived subscribe failed", err);
+        cb({});
+      }
+    );
+  }
+
+  async function setPlaceArchived(slug, archived) {
+    if (!currentUser) throw new Error("Not signed in");
+    const patch = {
+      slugs: {
+        [slug]: archived ? true : firebase.firestore.FieldValue.delete(),
+      },
+    };
+    await db.doc("itinerary_meta/archived").set(patch, { merge: true });
+  }
+
   function mountAuthSlot() {
     const slot = document.getElementById("auth-slot");
     if (!slot) return;
@@ -262,6 +289,8 @@
     deleteItineraryEntry,
     subscribeDayTitles,
     setDayTitle,
+    subscribeArchived,
+    setPlaceArchived,
     mountAuthSlot,
     get currentUser() {
       return currentUser;
