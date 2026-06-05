@@ -821,8 +821,8 @@ function loadCardStats() {
 
 /* ---------- Itinerary board ---------- */
 
-const DAY_COUNT = 13;
-const TRIP_START = "2026-06-04";
+const DAY_COUNT = 12;
+const TRIP_START = "2026-06-05";
 const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const WEEKDAY_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const FALLBACK_EMOJIS = ["✨","🌸","🍡","🗾","🍵","🚅","🏮","🎐","📸","🧭","🎋","🍥","🎏"];

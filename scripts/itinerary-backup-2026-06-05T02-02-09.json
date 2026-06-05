@@ -1,0 +1,1227 @@
+{
+  "entries": [
+    {
+      "id": "PBIPHLpB6zDrpwhjZJe8",
+      "mode": "plane",
+      "title": "Plane to Narita / Haneda",
+      "order": 100,
+      "notes": "Pick up SIM/pocket wifi and Suica/Pasmo IC card at the airport.",
+      "updatedAt": {
+        "seconds": 1780607146,
+        "nanoseconds": 833000000
+      },
+      "to": {
+        "label": "Narita / Haneda",
+        "slug": null
+      },
+      "createdAt": {
+        "seconds": 1777859810,
+        "nanoseconds": 565000000
+      },
+      "departTime": "",
+      "day": 1,
+      "tickets": [],
+      "placeSlug": null,
+      "kind": "transit",
+      "createdBy": {
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "name": "Arye Mindell"
+      },
+      "line": "",
+      "arriveTime": "19:30",
+      "from": {
+        "slug": null,
+        "label": ""
+      }
+    },
+    {
+      "id": "htRQT1dWFopeW0WU2MOM",
+      "to": {
+        "slug": "shibuya-crossing",
+        "label": "Shibuya Crossing"
+      },
+      "createdAt": {
+        "seconds": 1777863948,
+        "nanoseconds": 358000000
+      },
+      "departTime": "",
+      "day": 1,
+      "distKm": 83.04370234332384,
+      "costYen": 1700,
+      "durationMin": 96,
+      "mode": "train",
+      "title": "Train: Narita International Airport → Shibuya Crossing",
+      "notes": "",
+      "order": 150,
+      "updatedAt": {
+        "seconds": 1777864764,
+        "nanoseconds": 393000000
+      },
+      "kind": "transit",
+      "createdBy": {
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "name": "Arye Mindell"
+      },
+      "line": "",
+      "arriveTime": "",
+      "from": {
+        "label": "Narita International Airport",
+        "slug": null
+      },
+      "tickets": [],
+      "placeSlug": null
+    },
+    {
+      "id": "Ml5fv6gxQ2S3q4mPFqiq",
+      "title": "Shinjuku",
+      "order": 151,
+      "updatedAt": {
+        "seconds": 1780624250,
+        "nanoseconds": 144000000
+      },
+      "notes": "Dinner + Golden Gai bar crawl.  with neon and ramen.",
+      "tickets": [],
+      "placeSlug": "shinjuku-golden-gai",
+      "createdAt": {
+        "seconds": 1777859810,
+        "nanoseconds": 825000000
+      },
+      "day": 1,
+      "createdBy": {
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "name": "Arye Mindell"
+      }
+    },
+    {
+      "id": "0hEhnTVkjxUXvddQlVX6",
+      "createdBy": {
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "name": "Arye Mindell"
+      },
+      "createdAt": {
+        "seconds": 1777859810,
+        "nanoseconds": 920000000
+      },
+      "day": 2,
+      "placeSlug": "asakusa-senso-ji-temple",
+      "tickets": [],
+      "title": "Senso-ji + Nakamise-dori (morning)",
+      "updatedAt": {
+        "seconds": 1777859810,
+        "nanoseconds": 920000000
+      },
+      "notes": "Walk Nakamise-dori shopping street up to the temple. Snack stops along the way.",
+      "order": 100
+    },
+    {
+      "id": "5blo3qZb8NKu3DEG0Ql0",
+      "tickets": [],
+      "placeSlug": "ueno-park",
+      "order": 200,
+      "notes": "Gardens, shrines, museums. Tokyo National Museum if it's raining.",
+      "updatedAt": {
+        "seconds": 1777859811,
+        "nanoseconds": 48000000
+      },
+      "title": "Ueno Park (afternoon)",
+      "createdBy": {
+        "name": "Arye Mindell",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c"
+      },
+      "day": 2,
+      "createdAt": {
+        "seconds": 1777859811,
+        "nanoseconds": 48000000
+      }
+    },
+    {
+      "id": "RRUSUdTLBGbpmTUFZAFP",
+      "day": 2,
+      "createdAt": {
+        "seconds": 1780623040,
+        "nanoseconds": 658000000
+      },
+      "createdBy": {
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "name": "Arye Mindell"
+      },
+      "notes": "",
+      "updatedAt": {
+        "seconds": 1780624450,
+        "nanoseconds": 205000000
+      },
+      "order": 200.5,
+      "title": "GiGO Akihabara (Arcades)",
+      "placeSlug": "gigo-akihabara-arcades",
+      "tickets": []
+    },
+    {
+      "id": "4ovptJ1xSAMe0O7Ge52P",
+      "tickets": [],
+      "placeSlug": "roppongi-nightlife",
+      "order": 201,
+      "updatedAt": {
+        "seconds": 1780624448,
+        "nanoseconds": 57000000
+      },
+      "notes": "",
+      "title": "Roppongi Nightlife",
+      "createdBy": {
+        "name": "Arye Mindell",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c"
+      },
+      "day": 2,
+      "createdAt": {
+        "seconds": 1780623094,
+        "nanoseconds": 522000000
+      }
+    },
+    {
+      "id": "4EXkhvTZXTYGMODYKNwi",
+      "from": {
+        "slug": "shibuya-crossing",
+        "label": "Shibuya Crossing"
+      },
+      "arriveTime": "",
+      "line": "",
+      "kind": "transit",
+      "createdBy": {
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "name": "Arye Mindell"
+      },
+      "placeSlug": null,
+      "tickets": [],
+      "day": 4,
+      "departTime": "",
+      "createdAt": {
+        "seconds": 1777865935,
+        "nanoseconds": 740000000
+      },
+      "to": {
+        "label": "Mishima Station",
+        "slug": null
+      },
+      "updatedAt": {
+        "seconds": 1777866146,
+        "nanoseconds": 7000000
+      },
+      "notes": "",
+      "order": 148,
+      "title": "Train: Shibuya Crossing → Mishima Station",
+      "mode": "train",
+      "costYen": 2300,
+      "durationMin": 131,
+      "distKm": 115.43233344443377
+    },
+    {
+      "id": "9kWVS2lWLkLqEbPMzzDi",
+      "createdBy": {
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "name": "Arye Mindell"
+      },
+      "day": 4,
+      "createdAt": {
+        "seconds": 1777859811,
+        "nanoseconds": 486000000
+      },
+      "placeSlug": "lake-kawaguchi-mt-fuji",
+      "tickets": [
+        {
+          "url": "https://www.mtfujiropeway.jp/en/",
+          "label": "Mt. Fuji Panoramic Ropeway"
+        }
+      ],
+      "updatedAt": {
+        "seconds": 1777859811,
+        "nanoseconds": 486000000
+      },
+      "notes": "Bike the lakeshore. Take the Kachi Kachi (Mt. Fuji Panoramic) Ropeway up for the panoramic Fuji view.",
+      "order": 200,
+      "title": "Lake Kawaguchi — bike + Kachi Kachi Ropeway"
+    },
+    {
+      "id": "5RJcfs2SmVSG0RNPu3uz",
+      "createdAt": {
+        "seconds": 1777859811,
+        "nanoseconds": 615000000
+      },
+      "day": 4,
+      "createdBy": {
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "name": "Arye Mindell"
+      },
+      "title": "Camp Night 1 — Retreat Camp Mahoroba",
+      "order": 300,
+      "updatedAt": {
+        "seconds": 1777859811,
+        "nanoseconds": 615000000
+      },
+      "notes": "Wake up to Mt. Fuji sunrise. Have Hinata Rental deliver gear to the campsite, or use Soranoshita.",
+      "placeSlug": "retreat-camp-mahoroba",
+      "tickets": [
+        {
+          "url": "https://retreatcamp-mahoroba.net/",
+          "label": "Retreat Camp Mahoroba"
+        },
+        {
+          "url": "https://hinata-rental.me/",
+          "label": "Hinata Rental"
+        }
+      ]
+    },
+    {
+      "id": "cAekhWxiCkUILrT8zc2G",
+      "day": 5,
+      "createdAt": {
+        "seconds": 1777859811,
+        "nanoseconds": 709000000
+      },
+      "createdBy": {
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "name": "Arye Mindell"
+      },
+      "order": 100,
+      "updatedAt": {
+        "seconds": 1777866674,
+        "nanoseconds": 794000000
+      },
+      "notes": "Pack up camp, return rental gear. Bus to Mishima, grab luggage",
+      "title": "Return gear → bus to mishima→ Shinkansen to Kyoto",
+      "tickets": [],
+      "placeSlug": null
+    },
+    {
+      "id": "YSzht9CDVNbHWw1OtnAz",
+      "distKm": 378.0658222411954,
+      "costYen": 7600,
+      "durationMin": 417,
+      "mode": "train",
+      "title": "Train: Mishima Station → Kyoto Station",
+      "notes": "",
+      "order": 150,
+      "updatedAt": {
+        "seconds": 1777866692,
+        "nanoseconds": 686000000
+      },
+      "to": {
+        "label": "Kyoto Station",
+        "slug": null
+      },
+      "createdAt": {
+        "seconds": 1777866677,
+        "nanoseconds": 655000000
+      },
+      "departTime": "",
+      "day": 5,
+      "tickets": [],
+      "placeSlug": null,
+      "kind": "transit",
+      "createdBy": {
+        "name": "Arye Mindell",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22"
+      },
+      "line": "",
+      "arriveTime": "",
+      "from": {
+        "slug": null,
+        "label": "Mishima Station"
+      }
+    },
+    {
+      "id": "s3dPJ2rFvjLreWFEvLP4",
+      "createdBy": {
+        "name": "Arye Mindell",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22"
+      },
+      "day": 5,
+      "createdAt": {
+        "seconds": 1777859811,
+        "nanoseconds": 829000000
+      },
+      "placeSlug": "kinkaku-ji-golden-pavilion",
+      "tickets": [],
+      "notes": "¥500 entry. Quick visit (~45 min). Goes well as an afternoon stop on a travel day.",
+      "updatedAt": {
+        "seconds": 1777859811,
+        "nanoseconds": 829000000
+      },
+      "order": 200,
+      "title": "Kinkaku-ji (Golden Pavilion)"
+    },
+    {
+      "id": "QrDUdB2ScQvuMIla9xnJ",
+      "createdAt": {
+        "seconds": 1777859811,
+        "nanoseconds": 958000000
+      },
+      "day": 5,
+      "createdBy": {
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "name": "Arye Mindell"
+      },
+      "title": "Gion District — evening stroll",
+      "updatedAt": {
+        "seconds": 1777859811,
+        "nanoseconds": 958000000
+      },
+      "notes": "Lantern-lit alleys, traditional wooden machiya. Best after dark.",
+      "order": 300,
+      "placeSlug": "gion-district",
+      "tickets": []
+    },
+    {
+      "id": "a1jwTFRKq3y68aEnDRnK",
+      "createdBy": {
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "name": "Arye Mindell"
+      },
+      "createdAt": {
+        "seconds": 1777859812,
+        "nanoseconds": 73000000
+      },
+      "day": 5,
+      "placeSlug": "philosophers-path",
+      "tickets": [],
+      "title": "Philosopher's Path",
+      "updatedAt": {
+        "seconds": 1777859812,
+        "nanoseconds": 73000000
+      },
+      "notes": "Quiet canal-side walk. Pairs well with Gion if energy holds; otherwise save for Day 6 morning.",
+      "order": 400
+    },
+    {
+      "id": "Kte8e047hHZrIPFECLiu",
+      "title": "Fushimi Inari — full summit hike (early)",
+      "order": 100,
+      "notes": "GO EARLY (6–7am) for empty torii. Full summit hike ~2 hrs through quiet forest — most tourists turn back at the first viewpoint, do the whole thing. June = off-peak, lighter crowds.",
+      "updatedAt": {
+        "seconds": 1777859812,
+        "nanoseconds": 194000000
+      },
+      "placeSlug": "fushimi-inari-taisha",
+      "tickets": [],
+      "createdAt": {
+        "seconds": 1777859812,
+        "nanoseconds": 194000000
+      },
+      "day": 6,
+      "createdBy": {
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "name": "Arye Mindell"
+      }
+    },
+    {
+      "id": "y3jloy1XqgGHrgdrQAqf",
+      "title": "Arashiyama — bamboo forest + bikes",
+      "order": 200,
+      "updatedAt": {
+        "seconds": 1777859812,
+        "nanoseconds": 438000000
+      },
+      "notes": "Rent bikes. Bamboo grove, river, monkey park, Tenryu-ji temple. Allow a half day.",
+      "placeSlug": "arashiyama-bamboo-forest",
+      "tickets": [],
+      "createdAt": {
+        "seconds": 1777859812,
+        "nanoseconds": 438000000
+      },
+      "day": 6,
+      "createdBy": {
+        "name": "Arye Mindell",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c"
+      }
+    },
+    {
+      "id": "Mn3ObtRD20SzOLcIAcrX",
+      "placeSlug": "nara-park-todai-ji",
+      "tickets": [],
+      "title": "Nara Park & Todai-ji",
+      "updatedAt": {
+        "seconds": 1777859812,
+        "nanoseconds": 563000000
+      },
+      "notes": "1,000+ wild deer. Buy shika senbei (deer crackers) for the experience. Todai-ji's giant bronze Buddha is a must.",
+      "order": 100,
+      "createdBy": {
+        "name": "Arye Mindell",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c"
+      },
+      "createdAt": {
+        "seconds": 1777859812,
+        "nanoseconds": 563000000
+      },
+      "day": 7
+    },
+    {
+      "id": "2zEp0gla2wXgqYo9VuL9",
+      "line": "JR Kansai Line",
+      "kind": "transit",
+      "createdBy": {
+        "name": "Arye Mindell",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22"
+      },
+      "arriveTime": "",
+      "from": {
+        "slug": null,
+        "label": ""
+      },
+      "placeSlug": null,
+      "tickets": [],
+      "to": {
+        "label": "Kasagi",
+        "slug": null
+      },
+      "createdAt": {
+        "seconds": 1777859812,
+        "nanoseconds": 680000000
+      },
+      "day": 7,
+      "departTime": "",
+      "title": "Train to Kasagi",
+      "mode": "train",
+      "updatedAt": {
+        "seconds": 1780607146,
+        "nanoseconds": 648000000
+      },
+      "notes": "~5 min walk from Kasagi Station to the campground.",
+      "order": 200
+    },
+    {
+      "id": "5AHIRCMM2xGPJY6XStag",
+      "mode": "train",
+      "title": "Transit",
+      "order": -2,
+      "updatedAt": {
+        "seconds": 1777865012,
+        "nanoseconds": 592000000
+      },
+      "notes": "",
+      "to": {
+        "label": "",
+        "slug": null
+      },
+      "createdAt": {
+        "seconds": 1777865012,
+        "nanoseconds": 592000000
+      },
+      "departTime": "",
+      "day": 8,
+      "tickets": [],
+      "placeSlug": null,
+      "kind": "transit",
+      "createdBy": {
+        "name": "Landon G",
+        "uid": "DICZQtykzhXIG0i2jTfj86Wrcqb2",
+        "photo": "https://lh3.googleusercontent.com/a-/ALV-UjW-kxV27DcPWrUw_NcMloFNmz2hQiY8_SLPh-kzVkS72wxuE1enxD7VXYGJOidEXYGE3LgjZzlMzQfO1Z3ZxcZBodeIsIx2l2yrZ1zaHgvpMEXf0HvL9GTet6u5tzQF-Kt-4gjz8VuDQWFL2DvkoHwsTiJp0m_D92puT14JtOveOVP_SNQNABPbWmLISGXRwePN_QjfzVY5nhRkfDlEa_FxBa_OFxTo6dZXTHb24A5AXBDzrQKh6gw2z16XK2aGtp0uhq3ZLaR3TK4kJwpR58KZypCNBGkrbgQPwbLYcX9-HfDeresUIdKFKGrPCr1nIm-r7eVhfJLpXqhJKDvr_gATTwTK5TSxa2U1I-I-DPBsJNpCc77L_HxjFI4-jmTg8QKxT9f0VPEEGgK2U3Hc8CRlhrfqFDDUZhhWclIJYLSiwSUXXrEROI7MIaFQnzcXUZRya591Z8tR3x8lQ8RzRMroB3u-WT-i0GImyEFTCPvWKOqZuNGW1cnxxqSyNLYaFIpETfSZS96e6cWJHTTVs1FSuXFb2Qx3bBVOUXZZagnIEKIOmdh8quR59Xw_W83ETn1Rqt9H7ysd0_1JlIfBPlEM8QgYFIKHWQHXsQ13EPCZ6JkC2bCWHrr0eiUHTonXrjpLxDMbvTmhxpnkb_HNI8INfbgTOv4xjYZk7ezaJYdSk4bWxQe6c88AGgXbgEVpRVqD9xRqVyMbNnlcxn9O9nuQHQ5v1nSJW-MerZnUVQrglQBVpzKRCEz6cuN7x8-glHKCgS58a978wx5Rjw4DdtaYqicNGp9JnnSYqx6_ikKlocZ5Zpd41Y1-X8WyGK8c7Ro_x7BSTQSQT06oRNpSrCaWj1l_uFc9Oh-Vutr3gAtSpjHrRULC_z0P3R6-KY-C1OFVmV1v0h3_0-eBTvrxCRY7f6sr0_aK_JyfGJrVUZJ66J7NjWtAbZZOf2gsoEASaI2MZ59BfHhxH4CJquuodn0KOCp-twBYp1Dza1Sh5jPbGdwazLhckwL6Xba4q1a27yXkb3HtW7dNZ1a0RYJ-TJF743FyUr6UcAEivmR3S1PJNOPyn05yN50=s96-c"
+      },
+      "line": "",
+      "arriveTime": "",
+      "from": {
+        "label": "",
+        "slug": null
+      }
+    },
+    {
+      "id": "dPJrREt0JGW4Dhe0rNuS",
+      "tickets": [],
+      "placeSlug": "tadasu-no-mori",
+      "title": "Tadasu no Mori",
+      "order": 0,
+      "notes": "",
+      "updatedAt": {
+        "seconds": 1777864980,
+        "nanoseconds": 236000000
+      },
+      "createdBy": {
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "name": "Arye Mindell"
+      },
+      "createdAt": {
+        "seconds": 1777864980,
+        "nanoseconds": 236000000
+      },
+      "day": 8
+    },
+    {
+      "id": "eYNjdSWN9ELQ8mNbdxxz",
+      "createdBy": {
+        "name": "Arye Mindell",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c"
+      },
+      "createdAt": {
+        "seconds": 1777864896,
+        "nanoseconds": 822000000
+      },
+      "day": 8,
+      "tickets": [],
+      "placeSlug": "kasugayama-primeval-forest",
+      "title": "Kasugayama Primeval Forest",
+      "notes": "",
+      "updatedAt": {
+        "seconds": 1777866759,
+        "nanoseconds": 893000000
+      },
+      "order": 0.5
+    },
+    {
+      "id": "m7sCUBahrsgbVrCEub3x",
+      "title": "Camp Night 2 — Kasagi Campground",
+      "order": 1.5,
+      "updatedAt": {
+        "seconds": 1777866783,
+        "nanoseconds": 445000000
+      },
+      "notes": "30,000 sqm along Kizu River. No reservation needed, ~¥1,000/person. Stargazing, river views, Mt. Kasagi hiking nearby. BYO gear.",
+      "tickets": [],
+      "placeSlug": "kasagi-campground",
+      "createdAt": {
+        "seconds": 1777859812,
+        "nanoseconds": 811000000
+      },
+      "day": 8,
+      "createdBy": {
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "name": "Arye Mindell"
+      }
+    },
+    {
+      "id": "KAkIanH8ddUVBoI4AN46",
+      "createdAt": {
+        "seconds": 1777865029,
+        "nanoseconds": 34000000
+      },
+      "departTime": "",
+      "day": 9,
+      "to": {
+        "label": "Osaka",
+        "slug": null
+      },
+      "mode": "train",
+      "title": "Train: Kyoto → Osaka",
+      "notes": "",
+      "updatedAt": {
+        "seconds": 1777866772,
+        "nanoseconds": 636000000
+      },
+      "order": 99,
+      "distKm": 55.78050926379992,
+      "durationMin": 66,
+      "costYen": 1100,
+      "arriveTime": "",
+      "from": {
+        "slug": null,
+        "label": "Kyoto"
+      },
+      "kind": "transit",
+      "createdBy": {
+        "name": "Arye Mindell",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c"
+      },
+      "line": "",
+      "tickets": [],
+      "placeSlug": null
+    },
+    {
+      "id": "n6kcx0LUjYpCLEp2i7PO",
+      "tickets": [],
+      "placeSlug": "osaka-castle",
+      "title": "Osaka Castle (afternoon)",
+      "updatedAt": {
+        "seconds": 1777859813,
+        "nanoseconds": 246000000
+      },
+      "notes": "Huge surrounding park. Museum inside has city views from the top floor.",
+      "order": 200,
+      "createdBy": {
+        "name": "Arye Mindell",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c"
+      },
+      "createdAt": {
+        "seconds": 1777859813,
+        "nanoseconds": 246000000
+      },
+      "day": 9
+    },
+    {
+      "id": "RNFl4ophiC3Jml1JWqfa",
+      "createdBy": {
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "name": "Arye Mindell"
+      },
+      "day": 9,
+      "createdAt": {
+        "seconds": 1777859813,
+        "nanoseconds": 339000000
+      },
+      "tickets": [],
+      "placeSlug": "dotonbori",
+      "order": 300,
+      "updatedAt": {
+        "seconds": 1777859813,
+        "nanoseconds": 339000000
+      },
+      "notes": "Takoyaki, okonomiyaki, kushikatsu. Glico Man neon sign photo. Kuidaore — eat until you drop.",
+      "title": "Dotonbori — food crawl (evening)"
+    },
+    {
+      "id": "O3oKwqQ42CoxFC9nFCqZ",
+      "createdBy": {
+        "name": "Arye Mindell",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22"
+      },
+      "createdAt": {
+        "seconds": 1777859813,
+        "nanoseconds": 604000000
+      },
+      "day": 10,
+      "tickets": [],
+      "placeSlug": "minoh-falls",
+      "title": "Minoh Falls (Option A — nature)",
+      "notes": "30 min north of central Osaka. 2.7km paved trail through forested gorge to a 33m waterfall. Try maple leaf tempura along the path.",
+      "updatedAt": {
+        "seconds": 1777859813,
+        "nanoseconds": 604000000
+      },
+      "order": 100
+    },
+    {
+      "id": "A0o0p1GeTCFt4XMuqFhE",
+      "placeSlug": "universal-studios-japan",
+      "tickets": [
+        {
+          "url": "https://www.usj.co.jp/web/en/us",
+          "label": "USJ tickets"
+        }
+      ],
+      "title": "Universal Studios Japan (Option B — theme park)",
+      "updatedAt": {
+        "seconds": 1777859813,
+        "nanoseconds": 723000000
+      },
+      "notes": "Super Nintendo World. Buy Express Pass tickets in advance to skip the brutal queues. PICK ONE: this OR Minoh Falls.",
+      "order": 200,
+      "createdBy": {
+        "name": "Arye Mindell",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c"
+      },
+      "createdAt": {
+        "seconds": 1777859813,
+        "nanoseconds": 723000000
+      },
+      "day": 10
+    },
+    {
+      "id": "9idCZOSq9dD0tQ5eIjEF",
+      "notes": "",
+      "updatedAt": {
+        "seconds": 1777870636,
+        "nanoseconds": 13000000
+      },
+      "order": 201,
+      "title": "Shinsekai",
+      "tickets": [],
+      "placeSlug": "shinsekai",
+      "day": 10,
+      "createdAt": {
+        "seconds": 1777870636,
+        "nanoseconds": 13000000
+      },
+      "createdBy": {
+        "name": "Arye Mindell",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c"
+      }
+    },
+    {
+      "id": "LPjTxqIOe39ye77tQGtg",
+      "tickets": [],
+      "placeSlug": null,
+      "title": "osaka ij morning or dstraightto tokyop",
+      "notes": "",
+      "updatedAt": {
+        "seconds": 1777871400,
+        "nanoseconds": 642000000
+      },
+      "order": 0,
+      "createdBy": {
+        "uid": "xn5Fcq2ZksSxTg7sdjMzQJMl6nl1",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocKyigwgj956X_z4ir57KynEBzShjvzN1y9hWKioPeJE338EY6h4=s96-c",
+        "name": "Desirae Barrios"
+      },
+      "createdAt": {
+        "seconds": 1777871400,
+        "nanoseconds": 642000000
+      },
+      "day": 11
+    },
+    {
+      "id": "onGX8z4zDrqvmHNATZnQ",
+      "kind": "transit",
+      "createdBy": {
+        "name": "Arye Mindell",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c"
+      },
+      "line": "",
+      "arriveTime": "",
+      "from": {
+        "label": "Osaka",
+        "slug": null
+      },
+      "tickets": [],
+      "placeSlug": null,
+      "to": {
+        "slug": null,
+        "label": "Tokyo"
+      },
+      "createdAt": {
+        "seconds": 1777859813,
+        "nanoseconds": 836000000
+      },
+      "day": 12,
+      "departTime": "",
+      "title": "Shinkansen: Osaka → Tokyo",
+      "mode": "shinkansen",
+      "updatedAt": {
+        "seconds": 1780623661,
+        "nanoseconds": 441000000
+      },
+      "order": 98.125,
+      "notes": "~2.5 hrs, ~$130. Book a window seat on the right side (D) for Mt. Fuji views going east."
+    },
+    {
+      "id": "DUXeY30okRrzTwMz9lMx",
+      "createdAt": {
+        "seconds": 1780623713,
+        "nanoseconds": 908000000
+      },
+      "day": 12,
+      "createdBy": {
+        "name": "Arye Mindell",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c"
+      },
+      "title": "Meiji Shrine",
+      "order": 98.625,
+      "notes": "",
+      "updatedAt": {
+        "seconds": 1780623713,
+        "nanoseconds": 908000000
+      },
+      "placeSlug": "meiji-shrine",
+      "tickets": []
+    },
+    {
+      "id": "ZyNg6TIrnwle7xn9xffT",
+      "day": 12,
+      "createdAt": {
+        "seconds": 1780623595,
+        "nanoseconds": 993000000
+      },
+      "createdBy": {
+        "name": "Arye Mindell",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22"
+      },
+      "order": 99.125,
+      "notes": "",
+      "updatedAt": {
+        "seconds": 1780623595,
+        "nanoseconds": 993000000
+      },
+      "title": "Shibuya Crossing",
+      "tickets": [],
+      "placeSlug": "shibuya-crossing"
+    },
+    {
+      "id": "psucM65v4z326uRounXj",
+      "title": "WAGYUMAFIA The Cutlet Sandwich",
+      "order": 99.25,
+      "notes": "",
+      "updatedAt": {
+        "seconds": 1780623535,
+        "nanoseconds": 394000000
+      },
+      "placeSlug": "wagyumafia-the-cutlet-sandwich",
+      "tickets": [],
+      "createdAt": {
+        "seconds": 1780623535,
+        "nanoseconds": 394000000
+      },
+      "day": 12,
+      "createdBy": {
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "name": "Arye Mindell"
+      }
+    },
+    {
+      "id": "IUWe49tJ2w1wUv4WIUuM",
+      "createdBy": {
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "name": "Arye Mindell"
+      },
+      "day": 12,
+      "createdAt": {
+        "seconds": 1777859814,
+        "nanoseconds": 40000000
+      },
+      "placeSlug": "shibuya-sky",
+      "tickets": [
+        {
+          "url": "https://www.shibuya-scramble-square.com/sky/en/",
+          "label": "Shibuya Sky tickets"
+        }
+      ],
+      "notes": "Open-air 47F observation deck. Book a sunset slot in advance — it sells out.",
+      "updatedAt": {
+        "seconds": 1780623668,
+        "nanoseconds": 389000000
+      },
+      "order": 99.40625,
+      "title": "Shibuya Sky — sunset"
+    },
+    {
+      "id": "VkqQEuExhjM6nybY1OhD",
+      "day": 12,
+      "createdAt": {
+        "seconds": 1780623705,
+        "nanoseconds": 888000000
+      },
+      "createdBy": {
+        "name": "Arye Mindell",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22"
+      },
+      "updatedAt": {
+        "seconds": 1780623705,
+        "nanoseconds": 888000000
+      },
+      "notes": "",
+      "order": 99.4453125,
+      "title": "Yoyogi Park",
+      "tickets": [],
+      "placeSlug": "yoyogi-park"
+    },
+    {
+      "id": "eQazWGOAK4d93cAeLDSv",
+      "tickets": [],
+      "placeSlug": "kuumba-international",
+      "updatedAt": {
+        "seconds": 1780623699,
+        "nanoseconds": 795000000
+      },
+      "notes": "",
+      "order": 99.484375,
+      "title": "Kuumba International",
+      "createdBy": {
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "name": "Arye Mindell"
+      },
+      "day": 12,
+      "createdAt": {
+        "seconds": 1780623699,
+        "nanoseconds": 795000000
+      }
+    },
+    {
+      "id": "GF9wKnvdEqrPfypJSRhd",
+      "title": "Saturdays NYC Tokyo",
+      "order": 99.5625,
+      "updatedAt": {
+        "seconds": 1780623503,
+        "nanoseconds": 946000000
+      },
+      "notes": "",
+      "tickets": [],
+      "placeSlug": "saturdays-nyc-tokyo",
+      "createdAt": {
+        "seconds": 1780623503,
+        "nanoseconds": 946000000
+      },
+      "day": 12,
+      "createdBy": {
+        "name": "Arye Mindell",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c"
+      }
+    },
+    {
+      "id": "GMQm614RKSDg6q6Ou0l7",
+      "tickets": [],
+      "placeSlug": "daikanyama",
+      "updatedAt": {
+        "seconds": 1780623528,
+        "nanoseconds": 494000000
+      },
+      "notes": "",
+      "order": 99.578125,
+      "title": "Daikanyama",
+      "createdBy": {
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "name": "Arye Mindell"
+      },
+      "day": 12,
+      "createdAt": {
+        "seconds": 1780623528,
+        "nanoseconds": 494000000
+      }
+    },
+    {
+      "id": "bRdGxbrJ7wQsz9HJ42U3",
+      "createdAt": {
+        "seconds": 1780623518,
+        "nanoseconds": 224000000
+      },
+      "day": 12,
+      "createdBy": {
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "name": "Arye Mindell"
+      },
+      "title": "Daikanyama T-Site / Tsutaya Books",
+      "notes": "",
+      "updatedAt": {
+        "seconds": 1780623518,
+        "nanoseconds": 224000000
+      },
+      "order": 99.59375,
+      "placeSlug": "daikanyama-t-site-tsutaya-books",
+      "tickets": []
+    },
+    {
+      "id": "yET3HGxcG6wURlKEVFTb",
+      "updatedAt": {
+        "seconds": 1780623556,
+        "nanoseconds": 985000000
+      },
+      "notes": "",
+      "order": 99.609375,
+      "title": "visvim (F.I.L. Tokyo)",
+      "tickets": [],
+      "placeSlug": "visvim-fil-tokyo",
+      "day": 12,
+      "createdAt": {
+        "seconds": 1780623556,
+        "nanoseconds": 985000000
+      },
+      "createdBy": {
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "name": "Arye Mindell"
+      }
+    },
+    {
+      "id": "P7AlIm54iIvNYQRqV7qC",
+      "updatedAt": {
+        "seconds": 1780623426,
+        "nanoseconds": 532000000
+      },
+      "notes": "",
+      "order": 99.625,
+      "title": "Little Cloud Coffee",
+      "tickets": [],
+      "placeSlug": "little-cloud-coffee",
+      "day": 12,
+      "createdAt": {
+        "seconds": 1780623426,
+        "nanoseconds": 532000000
+      },
+      "createdBy": {
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "name": "Arye Mindell"
+      }
+    },
+    {
+      "id": "VRZhArsPrIjfy9vq8ysd",
+      "createdBy": {
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "name": "Arye Mindell"
+      },
+      "day": 12,
+      "createdAt": {
+        "seconds": 1780623458,
+        "nanoseconds": 672000000
+      },
+      "placeSlug": "harajuku-takeshita-street",
+      "tickets": [],
+      "notes": "",
+      "updatedAt": {
+        "seconds": 1780623459,
+        "nanoseconds": 482000000
+      },
+      "order": 99.8125,
+      "title": "Harajuku / Takeshita Street"
+    },
+    {
+      "id": "YLid4jR11Q3HgsTzzORJ",
+      "order": 100,
+      "updatedAt": {
+        "seconds": 1777859814,
+        "nanoseconds": 341000000
+      },
+      "notes": "Last-minute snacks, KitKats, weird Japanese gadgets. Tax-free counter if you're spending >¥5,000.",
+      "title": "Don Quijote souvenir run",
+      "tickets": [],
+      "placeSlug": null,
+      "day": 12,
+      "createdAt": {
+        "seconds": 1777859814,
+        "nanoseconds": 341000000
+      },
+      "createdBy": {
+        "name": "Arye Mindell",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c"
+      }
+    },
+    {
+      "id": "n2cC4EpJZulbCIfBy7Ta",
+      "mode": "plane",
+      "title": "Plane to home",
+      "notes": "Narita Express or Limousine Bus. Allow 3 hrs before international departure.",
+      "updatedAt": {
+        "seconds": 1780607146,
+        "nanoseconds": 989000000
+      },
+      "order": -1,
+      "to": {
+        "slug": null,
+        "label": "home"
+      },
+      "createdAt": {
+        "seconds": 1777859814,
+        "nanoseconds": 428000000
+      },
+      "day": 13,
+      "departTime": "",
+      "placeSlug": null,
+      "tickets": [],
+      "line": "",
+      "createdBy": {
+        "name": "Arye Mindell",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22"
+      },
+      "kind": "transit",
+      "arriveTime": "",
+      "from": {
+        "slug": null,
+        "label": ""
+      }
+    },
+    {
+      "id": "GNVq1EvxzVuCJ9BpZOdk",
+      "day": 13,
+      "createdAt": {
+        "seconds": 1777867261,
+        "nanoseconds": 468000000
+      },
+      "createdBy": {
+        "uid": "AYZjzRY72SW9LHpDUE2nQDlfft22",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocJRD3tUzQoLVevVsJPjFrYAUlDjErprl4gRQrKDCxM9Cngh-g=s96-c",
+        "name": "Arye Mindell"
+      },
+      "notes": "",
+      "order": 0,
+      "updatedAt": {
+        "seconds": 1777870570,
+        "nanoseconds": 632000000
+      },
+      "title": "Arye and Des leave at 6:00 pm",
+      "tickets": [],
+      "placeSlug": null
+    },
+    {
+      "id": "vxzmLfzOEO5t3G7zOn6w",
+      "createdBy": {
+        "uid": "xn5Fcq2ZksSxTg7sdjMzQJMl6nl1",
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocKyigwgj956X_z4ir57KynEBzShjvzN1y9hWKioPeJE338EY6h4=s96-c",
+        "name": "Desirae Barrios"
+      },
+      "createdAt": {
+        "seconds": 1777867187,
+        "nanoseconds": 921000000
+      },
+      "day": 13,
+      "tickets": [],
+      "placeSlug": null,
+      "title": "lando flight leave 9:30pm",
+      "updatedAt": {
+        "seconds": 1777870571,
+        "nanoseconds": 681000000
+      },
+      "order": 1,
+      "notes": ""
+    },
+    {
+      "id": "Q5hJeCJepR6Wn08MG9rb",
+      "day": 13,
+      "createdAt": {
+        "seconds": 1777867119,
+        "nanoseconds": 420000000
+      },
+      "createdBy": {
+        "photo": "https://lh3.googleusercontent.com/a/ACg8ocKyigwgj956X_z4ir57KynEBzShjvzN1y9hWKioPeJE338EY6h4=s96-c",
+        "uid": "xn5Fcq2ZksSxTg7sdjMzQJMl6nl1",
+        "name": "Desirae Barrios"
+      },
+      "notes": "",
+      "updatedAt": {
+        "seconds": 1777870572,
+        "nanoseconds": 500000000
+      },
+      "order": 2,
+      "title": "riley flight leave at 2:35",
+      "tickets": [],
+      "placeSlug": null
+    }
+  ],
+  "titles": {
+    "1": "Arrive in Tokyo",
+    "2": "Tokyo -",
+    "3": "Tokyo",
+    "4": "Camping",
+    "5": "Kyoto",
+    "6": "Kyoto",
+    "7": "Kyoto",
+    "8": "",
+    "9": "Osaka",
+    "10": "Osaka",
+    "11": "Osaka",
+    "12": "Tokyo"
+  }
+}
