@@ -310,344 +310,9 @@ function makeMarker(place) {
 
 let map;
 let markersLayer;
-let staysLayer;
 let currentBounds;
 let allPlacesList = [];
 let currentFilter = "all";
-let hotelData = { legs: [] };
-let showStays = false;
-
-async function loadHotels() {
-  try {
-    const res = await fetch("hotels.json");
-    if (!res.ok) return;
-    hotelData = await res.json();
-  } catch {
-    hotelData = { legs: [] };
-  }
-}
-
-function hotelPriceLine(hotel, nights) {
-  const pn = hotel.priceNightY
-    ? `¥${hotel.priceNightY.toLocaleString()} / $${hotel.priceNightUsd}`
-    : "—";
-  const pt =
-    hotel.priceTotalY && nights > 1
-      ? `${nights}n total ≈ ¥${hotel.priceTotalY.toLocaleString()} / $${hotel.priceTotalUsd}`
-      : "";
-  const pp =
-    hotel.priceTotalY
-      ? `≈ $${Math.round(hotel.priceTotalUsd / 4)} per person`
-      : "";
-  return { perNight: pn, total: pt, perPerson: pp };
-}
-
-function makeHotelMarker(hotel, leg) {
-  const color = CITY_COLORS[leg.city] || "#444";
-  const icon = L.divIcon({
-    className: "pin",
-    html: `<div class="hotel-pin" style="--c:${color}"><span>${hotel.score}</span></div>`,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
-  });
-  const m = L.marker([hotel.lat, hotel.lng], { icon, title: hotel.name });
-  const price = hotelPriceLine(hotel, leg.nights);
-  const rating = hotel.rating
-    ? `⭐ ${hotel.rating} <span class="hotel-reviews">(${hotel.reviews})</span>`
-    : "";
-  m.bindPopup(`
-    <div class="popup hotel-popup">
-      ${hotel.image ? `<img src="${hotel.image}" alt="" class="hotel-thumb" loading="lazy" />` : ""}
-      <div class="popup-city" style="color:${color}">${leg.label} · score ${hotel.score}/100</div>
-      <h4>${hotel.name}</h4>
-      <div class="hotel-meta">
-        ${rating ? `<span>${rating}</span>` : ""}
-        <span class="hotel-price">${price.perNight}/night · 4 guests</span>
-      </div>
-      ${price.total ? `<p class="hotel-dist">${price.total} · ${price.perPerson}</p>` : `<p class="hotel-dist">${price.perPerson}</p>`}
-      ${hotel.roomType ? `<p class="hotel-dist">🛏️ ${hotel.roomType}</p>` : ""}
-      <p class="hotel-dist">${hotel.distanceKm} km to ${hotel.nearest}</p>
-      <a class="popup-more" href="${hotel.url}" target="_blank" rel="noopener">Book on Rakuten →</a>
-    </div>
-  `);
-  return m;
-}
-
-function renderStays() {
-  if (!staysLayer) staysLayer = L.layerGroup();
-  staysLayer.clearLayers();
-  if (!showStays) {
-    if (map.hasLayer(staysLayer)) map.removeLayer(staysLayer);
-    return;
-  }
-  const legs =
-    currentFilter === "all"
-      ? hotelData.legs
-      : hotelData.legs.filter((l) => l.city === currentFilter);
-  for (const leg of legs) {
-    for (const h of leg.hotels || []) {
-      staysLayer.addLayer(makeHotelMarker(h, leg));
-    }
-  }
-  if (!map.hasLayer(staysLayer)) staysLayer.addTo(map);
-}
-
-function formatDateRange(checkin, checkout) {
-  const fmt = (d) =>
-    new Date(d + "T00:00").toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
-  return `${fmt(checkin)} → ${fmt(checkout)}`;
-}
-
-function renderStayCard(hotel, leg) {
-  const color = CITY_COLORS[leg.city] || "#444";
-  const card = el("a", "stay-card");
-  card.href = hotel.url;
-  card.target = "_blank";
-  card.rel = "noopener";
-
-  const imgWrap = el("div", "stay-img");
-  if (hotel.image) {
-    const img = document.createElement("img");
-    img.src = hotel.image;
-    img.alt = hotel.name;
-    img.loading = "lazy";
-    imgWrap.appendChild(img);
-  } else {
-    imgWrap.classList.add("no-img");
-  }
-  const badge = el("span", "stay-score", hotel.score);
-  badge.style.setProperty("--c", color);
-  imgWrap.appendChild(badge);
-  card.appendChild(imgWrap);
-
-  const body = el("div", "stay-body");
-  body.appendChild(el("h3", "stay-name", hotel.name));
-  if (hotel.nameJa && hotel.nameJa !== hotel.name) {
-    body.appendChild(el("p", "stay-name-ja", hotel.nameJa));
-  }
-
-  const meta = el("div", "stay-meta");
-  if (hotel.rating) {
-    meta.appendChild(
-      el(
-        "span",
-        "stay-rating",
-        `⭐ ${hotel.rating} <span class="muted">(${hotel.reviews})</span>`
-      )
-    );
-  }
-  meta.appendChild(
-    el(
-      "span",
-      "stay-distance",
-      `📍 ${hotel.distanceKm} km → ${hotel.nearest}`
-    )
-  );
-  body.appendChild(meta);
-
-  const price = hotelPriceLine(hotel, leg.nights);
-  const priceEl = el("div", "stay-price");
-  priceEl.innerHTML = `
-    <span class="stay-price-night">${price.perNight}</span><span class="muted"> /night · 4 guests</span>
-    ${price.total ? `<span class="stay-price-total">${price.total} · ${price.perPerson}</span>` : `<span class="stay-price-total">${price.perPerson}</span>`}
-  `;
-  body.appendChild(priceEl);
-
-  if (hotel.roomType) {
-    body.appendChild(el("p", "stay-room", hotel.roomType));
-  }
-
-  const cta = el("span", "stay-cta", "Book on Rakuten →");
-  body.appendChild(cta);
-
-  card.appendChild(body);
-  return card;
-}
-
-const COUNCIL_REPORT_PATH = "council/council-report-20260417-234658.html";
-
-const STAYS_PER_LEG_KEY = "japanTrip.staysPerLeg";
-const STAYS_PER_LEG_OPTIONS = [3, 6, 10, "all"];
-
-function getStaysPerLeg() {
-  const raw = localStorage.getItem(STAYS_PER_LEG_KEY);
-  if (raw === "all") return "all";
-  const n = parseInt(raw, 10);
-  return STAYS_PER_LEG_OPTIONS.includes(n) ? n : 6;
-}
-
-function setStaysPerLeg(value) {
-  localStorage.setItem(STAYS_PER_LEG_KEY, String(value));
-}
-
-function buildExternalSearchLinks(leg, guests) {
-  const adults = guests?.adults || 4;
-  const rooms = guests?.rooms || 2;
-  const loc = encodeURIComponent(`${leg.city}, Japan`);
-  const cityDash = encodeURIComponent(`${leg.city}--Japan`);
-  const ci = leg.checkin;
-  const co = leg.checkout;
-  return [
-    {
-      label: "Airbnb",
-      url: `https://www.airbnb.com/s/${cityDash}/homes?checkin=${ci}&checkout=${co}&adults=${adults}`,
-    },
-    {
-      label: "Booking",
-      url: `https://www.booking.com/searchresults.html?ss=${loc}&checkin=${ci}&checkout=${co}&group_adults=${adults}&no_rooms=${rooms}`,
-    },
-    {
-      label: "Google Hotels",
-      url: `https://www.google.com/travel/hotels/${encodeURIComponent(leg.city)}?q=${loc}&checkin=${ci}&checkout=${co}&adults=${adults}`,
-    },
-    {
-      label: "Expedia",
-      url: `https://www.expedia.com/Hotel-Search?destination=${loc}&startDate=${ci}&endDate=${co}&adults=${adults}`,
-    },
-  ];
-}
-
-function renderHotelsPanel(panel) {
-  panel.innerHTML = "";
-  if (!hotelData.legs.length) {
-    panel.appendChild(
-      el(
-        "p",
-        "stays-empty",
-        "No stays data yet. Run scripts/fetch_hotels.js."
-      )
-    );
-    return;
-  }
-
-  const hero = el("section", "stays-hero");
-  hero.innerHTML = `
-    <h1 class="stays-title">Stays</h1>
-    <p class="stays-sub">
-      ${hotelData.guests?.adults || 4} guests · ${hotelData.guests?.rooms || 2} rooms ·
-      scored on price, closeness to your places, and rating.
-      <span class="muted">USD ≈ ¥${hotelData.usdRate || 150}</span>
-    </p>
-  `;
-
-  const controls = el("div", "stays-controls");
-  controls.appendChild(el("span", "stays-controls-label", "Show per city"));
-  const seg = el("div", "stays-count-seg");
-  const current = getStaysPerLeg();
-  for (const opt of STAYS_PER_LEG_OPTIONS) {
-    const btn = el(
-      "button",
-      "stays-count-btn" + (opt === current ? " active" : ""),
-      opt === "all" ? "All" : String(opt)
-    );
-    btn.addEventListener("click", () => {
-      if (opt === current) return;
-      setStaysPerLeg(opt);
-      renderHotelsPanel(panel);
-    });
-    seg.appendChild(btn);
-  }
-  controls.appendChild(seg);
-  hero.appendChild(controls);
-  panel.appendChild(hero);
-
-  const perLeg = getStaysPerLeg();
-
-  for (const leg of hotelData.legs) {
-    const section = el("section", "stays-leg");
-    const color = CITY_COLORS[leg.city] || "#444";
-    const head = el("header", "stays-leg-head");
-    head.innerHTML = `
-      <h2 class="stays-leg-title" style="border-color:${color}">${leg.label}</h2>
-      <p class="stays-leg-sub">${formatDateRange(leg.checkin, leg.checkout)} · ${leg.nights} night${leg.nights > 1 ? "s" : ""}</p>
-    `;
-    const links = el("div", "stays-extlinks");
-    links.appendChild(el("span", "stays-extlinks-label", "Search elsewhere:"));
-    for (const link of buildExternalSearchLinks(leg, hotelData.guests)) {
-      const a = el("a", "stays-extlink", link.label);
-      a.href = link.url;
-      a.target = "_blank";
-      a.rel = "noopener";
-      links.appendChild(a);
-    }
-    head.appendChild(links);
-    section.appendChild(head);
-
-    const shown =
-      perLeg === "all" ? leg.hotels : leg.hotels.slice(0, perLeg);
-    const grid = el("div", "stays-grid");
-    for (const h of shown) grid.appendChild(renderStayCard(h, leg));
-    section.appendChild(grid);
-
-    if (perLeg !== "all" && leg.hotels.length > shown.length) {
-      const more = el(
-        "p",
-        "stays-leg-more",
-        `+ ${leg.hotels.length - shown.length} more available — switch to a higher count above.`
-      );
-      section.appendChild(more);
-    }
-
-    panel.appendChild(section);
-  }
-}
-
-function renderCouncilPanel(panel) {
-  panel.innerHTML = "";
-  const header = el("div", "council-header");
-  header.innerHTML = `
-    <h1 class="stays-title">Council Report</h1>
-    <p class="stays-sub">5 AI advisors debate the hotel picks. <a href="${COUNCIL_REPORT_PATH}" target="_blank" rel="noopener" class="council-open">Open in new tab ↗</a></p>
-  `;
-  panel.appendChild(header);
-
-  const frame = document.createElement("iframe");
-  frame.src = COUNCIL_REPORT_PATH;
-  frame.className = "council-iframe";
-  frame.title = "LLM Council Report";
-  panel.appendChild(frame);
-}
-
-function renderStaysView() {
-  const root = document.getElementById("stays-view");
-  root.innerHTML = "";
-
-  const subtabs = el("div", "stays-subtabs");
-  const hotelsBtn = el("button", "stays-subtab active", "Hotels");
-  const councilBtn = el("button", "stays-subtab", "Council Report");
-  subtabs.appendChild(hotelsBtn);
-  subtabs.appendChild(councilBtn);
-  root.appendChild(subtabs);
-
-  const hotelsPanel = el("div", "stays-panel");
-  renderHotelsPanel(hotelsPanel);
-  root.appendChild(hotelsPanel);
-
-  const councilPanel = el("div", "stays-panel");
-  councilPanel.style.display = "none";
-  root.appendChild(councilPanel);
-
-  let councilLoaded = false;
-  hotelsBtn.addEventListener("click", () => {
-    hotelsBtn.classList.add("active");
-    councilBtn.classList.remove("active");
-    hotelsPanel.style.display = "";
-    councilPanel.style.display = "none";
-  });
-  councilBtn.addEventListener("click", () => {
-    councilBtn.classList.add("active");
-    hotelsBtn.classList.remove("active");
-    hotelsPanel.style.display = "none";
-    councilPanel.style.display = "";
-    if (!councilLoaded) {
-      renderCouncilPanel(councilPanel);
-      councilLoaded = true;
-    }
-  });
-}
 
 function renderMarkers(places) {
   if (!markersLayer) {
@@ -705,14 +370,6 @@ function applyFilter(city) {
       ? allPlacesList
       : allPlacesList.filter((p) => p.city === city);
   renderMarkers(filtered);
-  renderStays();
-}
-
-function toggleStays() {
-  showStays = !showStays;
-  const btn = document.querySelector(".chip.stays-toggle");
-  if (btn) btn.classList.toggle("active", showStays);
-  renderStays();
 }
 
 function renderFilterBar(cities) {
@@ -726,14 +383,6 @@ function renderFilterBar(cities) {
   };
   bar.appendChild(makeChip("All", "all"));
   for (const c of cities) bar.appendChild(makeChip(c, c));
-
-  const sep = el("span", "filter-sep");
-  bar.appendChild(sep);
-
-  const stays = el("button", "chip stays-toggle", "🏨 Stays");
-  stays.title = "Toggle scored hotels near your places";
-  stays.addEventListener("click", toggleStays);
-  bar.appendChild(stays);
 }
 
 function setView(view) {
@@ -773,7 +422,7 @@ function allPlacesIncludingCoordless(data) {
   return out;
 }
 
-Promise.all([getTripData(), loadHotels(), loadTripDistances()]).then(([data]) => {
+Promise.all([getTripData(), loadTripDistances()]).then(([data]) => {
   document.querySelector("h1.site-title").textContent = data.title;
   document.title = data.title;
 
@@ -785,7 +434,6 @@ Promise.all([getTripData(), loadHotels(), loadTripDistances()]).then(([data]) =>
   allPlacesForItin = allPlacesIncludingCoordless(data);
   renderFilterBar(data.sections.map((s) => s.name));
   initMap();
-  renderStaysView();
   initItinerary();
 
   for (const btn of document.querySelectorAll(".tab")) {
@@ -823,6 +471,49 @@ function loadCardStats() {
 
 const DAY_COUNT = 12;
 const TRIP_START = "2026-06-05";
+
+// Booked hotels. Each day shows the hotel you sleep at that night
+// (checkin <= date < checkout) as a fixed footer on the day column and a
+// distinct dot on the day map. Coords come from hotels.json where available.
+const STAY_COLOR = "#2f6fed";
+const CONFIRMED_STAYS = [
+  {
+    name: "Hotel Graphy Shibuya",
+    city: "Tokyo",
+    checkin: "2026-06-05",
+    checkout: "2026-06-07",
+    coords: [35.6532, 139.7071],
+    url: "https://www.google.com/maps/search/?api=1&query=Hotel%20Graphy%20Shibuya",
+  },
+  {
+    name: "Loisir Hotel Classic Garden Kyoto Sanjo",
+    city: "Kyoto",
+    checkin: "2026-06-08",
+    checkout: "2026-06-11",
+    // 80 Mikura-cho, Sanjo-dori Karasuma Nishi-iru, Nakagyo-ku — by Karasuma Oike Stn
+    coords: [35.0084, 135.7589],
+    url: "https://www.google.com/maps/search/?api=1&query=Loisir%20Hotel%20Classic%20Garden%20Kyoto%20Sanjo",
+  },
+  {
+    name: "Osaka Granbell Hotel",
+    city: "Osaka",
+    checkin: "2026-06-12",
+    checkout: "2026-06-14",
+    // 2-7 Kitakyuhoji-machi, Chuo-ku — near Sakaisuji-Honmachi
+    coords: [34.6798, 135.5037],
+    url: "https://www.google.com/maps/search/?api=1&query=Osaka%20Granbell%20Hotel",
+  },
+  {
+    name: "Sukumo",
+    city: "Tokyo",
+    checkin: "2026-06-14",
+    checkout: "2026-06-16",
+    // 11-2 Kanda-Konya-cho, Chiyoda-ku — near Kanda Station
+    coords: [35.692, 139.7741],
+    url: "https://www.google.com/maps/search/?api=1&query=Sukumo%2011-2%20Kanda-Konyacho%20Chiyoda%20Tokyo",
+  },
+];
+
 const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const WEEKDAY_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const FALLBACK_EMOJIS = ["✨","🌸","🍡","🗾","🍵","🚅","🏮","🎐","📸","🧭","🎋","🍥","🎏"];
@@ -905,11 +596,14 @@ const boardState = {
   showArchived: false,
   dayTitles: {},
   activeDay: null,
+  ideasFocused: false,
   miniMap: null,
   miniMapLayers: null,
   pinByEntryId: new Map(),
   previewSlug: null,
   previewMarker: null,
+  hoverPreviewMarker: null,
+  addingSlugs: new Set(),
   pulseTimer: null,
   transitMigrationRan: false,
   mapPanelHeight: loadSavedMapPanelHeight(),
@@ -983,6 +677,23 @@ function dateForDay(dayNum) {
 function formatDayDate(dayNum) {
   const date = dateForDay(dayNum);
   return `${WEEKDAY_SHORT[date.getDay()]} · ${MONTH_SHORT[date.getMonth()]} ${date.getDate()}`;
+}
+
+function isoForDay(dayNum) {
+  const date = dateForDay(dayNum);
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${mm}-${dd}`;
+}
+
+// The hotel you sleep at on the night of day `dayNum`, or null (e.g. the
+// flight-home day has no night in Japan).
+function stayForDay(dayNum) {
+  if (dayNum < 1) return null;
+  const iso = isoForDay(dayNum);
+  return (
+    CONFIRMED_STAYS.find((s) => s.checkin <= iso && iso < s.checkout) || null
+  );
 }
 
 const sortables = new Map();
@@ -1105,6 +816,45 @@ function entryCoords(entry) {
     Number.isFinite(entry.coords[1])
   ) {
     return entry.coords;
+  }
+  return null;
+}
+
+// Per-mode color for transit connector lines on the mini map — distinct from
+// the gray walking route drawn between ordinary stops.
+const TRANSIT_LINE_COLORS = {
+  shinkansen: "#0b6bcb",
+  train: "#2e7d4f",
+  subway: "#c2410c",
+  bus: "#b8860b",
+  taxi: "#c98a00",
+  plane: "#7c3aed",
+  ferry: "#0891b2",
+  cable: "#9d174d",
+};
+function transitLineColor(mode) {
+  return TRANSIT_LINE_COLORS[mode] || "#0b6bcb";
+}
+
+// Coords for one end of a transit leg ({slug,label,coords}). Prefer stored
+// coords, then the catalog place behind the slug, then a cached geocode of the
+// label. Null until something resolves (a background geocode may fill it in).
+function transitEndCoords(end) {
+  if (!end) return null;
+  if (
+    Array.isArray(end.coords) &&
+    end.coords.length === 2 &&
+    Number.isFinite(end.coords[0]) &&
+    Number.isFinite(end.coords[1])
+  ) {
+    return end.coords;
+  }
+  const p = end.slug ? placeFor(end.slug) : null;
+  if (p && Array.isArray(p.coords) && p.coords.length === 2) return p.coords;
+  const lbl = end.label ? end.label.trim() : "";
+  if (lbl && geocodeCache.has(lbl)) {
+    const cached = geocodeCache.get(lbl);
+    if (cached) return cached;
   }
   return null;
 }
@@ -1568,6 +1318,27 @@ function buildDayColumn(dayNum) {
   col.appendChild(list);
 
   col.appendChild(buildQuickAdd(dayNum));
+
+  const stay = stayForDay(dayNum);
+  if (stay) {
+    const prev = stayForDay(dayNum - 1);
+    const isCheckin = !prev || prev.name !== stay.name;
+    const foot = el("div", "board-col-hotel");
+    foot.title = stay.url ? `${stay.name} — open in Google Maps` : stay.name;
+    foot.innerHTML = `
+      <span class="board-col-hotel-dot" aria-hidden="true">🏨</span>
+      <span class="board-col-hotel-name">${escapeHtml(stay.name)}</span>
+      ${isCheckin ? '<span class="board-col-hotel-badge">check-in</span>' : ""}
+    `;
+    if (stay.url) {
+      foot.classList.add("is-link");
+      foot.addEventListener("click", () => {
+        window.open(stay.url, "_blank", "noopener");
+      });
+    }
+    col.appendChild(foot);
+  }
+
   return col;
 }
 
@@ -1773,6 +1544,11 @@ function buildItineraryMarkdown() {
         out.push("");
       }
     }
+    const stay = stayForDay(d);
+    if (stay) {
+      out.push(`🏨 **Stay:** ${stay.name}`);
+      out.push("");
+    }
   }
 
   return out.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd() + "\n";
@@ -1798,10 +1574,12 @@ function downloadItineraryMarkdown() {
 
 function buildIdeasPanel() {
   const section = el("section", "board-ideas");
+  if (boardState.ideasFocused) section.classList.add("is-focused");
   section.innerHTML = `
-    <div class="board-ideas-head">
+    <div class="board-ideas-head" title="Click to focus — shows every available idea in the day's city on the map">
       <span class="board-ideas-emoji">📝</span>
       <span class="board-ideas-title">Ideas</span>
+      <span class="board-ideas-pin">📌</span>
       <span class="board-ideas-sub">drag a place onto a day</span>
       <input class="board-ideas-search" type="search" placeholder="Search name, city, or tag…" aria-label="Search places" />
       <span class="board-ideas-count" data-ideas-count></span>
@@ -1810,6 +1588,14 @@ function buildIdeasPanel() {
     </div>
     <div class="board-ideas-list" data-day="palette"></div>
   `;
+  // Click the header (not the search/buttons) to focus the Ideas box, the same
+  // way clicking a day column focuses that day. Focusing keeps the current day
+  // pinned and lights up every available idea in that day's city on the map.
+  const head = section.querySelector(".board-ideas-head");
+  head.addEventListener("click", (ev) => {
+    if (ev.target.closest("input, button, a")) return;
+    toggleIdeasFocus();
+  });
   const search = section.querySelector(".board-ideas-search");
   search.value = boardState.paletteQuery;
   search.addEventListener("input", () => {
@@ -1858,6 +1644,9 @@ function reconcileBoard() {
     return;
   }
   hidePopover();
+  for (const entry of boardState.entries) {
+    if (entry.placeSlug) boardState.addingSlugs.delete(entry.placeSlug);
+  }
   const byDay = groupEntriesByDay(boardState.entries);
   const user = window.Trip?.currentUser;
   const canDrag = !!user;
@@ -1953,6 +1742,14 @@ function setActiveDay(dayNum) {
   renderPalette();
 }
 
+function toggleIdeasFocus() {
+  boardState.ideasFocused = !boardState.ideasFocused;
+  const section = document.querySelector(".board-ideas");
+  if (section) section.classList.toggle("is-focused", boardState.ideasFocused);
+  // City options key off the active day; renderMiniMap handles the no-day hint.
+  renderMiniMap();
+}
+
 function ensureMiniMap() {
   if (typeof L === "undefined") return null;
   if (boardState.miniMap) return boardState.miniMap;
@@ -1988,6 +1785,59 @@ function numberedDivIcon(n, color, highlight) {
   });
 }
 
+// Board ("from") / alight ("to") node for a transit leg. The mode glyph marks
+// where you get on; a checkered flag marks where you get off. Clicking either
+// node jumps to the travel card it belongs to.
+function transitNodeMarker(entry, role, coords, color) {
+  const isFrom = role === "from";
+  const glyph = isFrom ? entryEmoji(entry) : "🏁";
+  const icon = L.divIcon({
+    className: "board-map-pin-icon",
+    html:
+      `<span class="board-transit-node is-${role}" style="--pin-color:${color}">` +
+      `${glyph}</span>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 28],
+  });
+  const marker = L.marker(coords, { icon });
+  marker.entryId = entry.id;
+  const modeLabel = modeDisplayLabel(entry.mode);
+  const fromLabel = entry.from?.label || "—";
+  const toLabel = entry.to?.label || "—";
+  const tip = isFrom
+    ? `Board the ${modeLabel} · ${fromLabel} → ${toLabel}`
+    : `Get off · ${toLabel}`;
+  marker.bindTooltip(tip, { direction: "top", offset: [0, -22] });
+  marker.on("click", () => focusCardForEntry(entry.id));
+  return marker;
+}
+
+// Transit endpoints that aren't catalog places have only a label. Geocode the
+// missing ones in the background (cached), then re-render once any resolve.
+let transitGeocodeBusy = false;
+async function backfillTransitCoords(transitEntries) {
+  if (transitGeocodeBusy) return;
+  const labels = new Set();
+  for (const e of transitEntries) {
+    for (const end of [e?.from, e?.to]) {
+      const lbl = end?.label?.trim();
+      if (lbl && !transitEndCoords(end)) labels.add(lbl);
+    }
+  }
+  if (labels.size === 0) return;
+  transitGeocodeBusy = true;
+  let resolvedAny = false;
+  try {
+    for (const lbl of labels) {
+      const c = await geocodeLabel(lbl);
+      if (c) resolvedAny = true;
+    }
+  } finally {
+    transitGeocodeBusy = false;
+  }
+  if (resolvedAny) renderMiniMap();
+}
+
 function renderMiniMap() {
   const panel = document.querySelector(".board-map-panel");
   if (!panel) return;
@@ -1995,6 +1845,7 @@ function renderMiniMap() {
   const empty = panel.querySelector("[data-map-empty]");
   const host = panel.querySelector("[data-map-host]");
   const day = boardState.activeDay;
+  clearIdeaHoverPreview();
   boardState.pinByEntryId = new Map();
   boardState.previewMarker = null;
 
@@ -2009,7 +1860,11 @@ function renderMiniMap() {
   if (day == null) {
     panel.dataset.collapsed = "true";
     applyMapPanelHeight(panel);
-    if (status) status.textContent = "📍 Click a day column to focus the map";
+    if (status) {
+      status.textContent = boardState.ideasFocused
+        ? "📍 Focus a day to see its city's ideas on the map"
+        : "📍 Click a day column to focus the map";
+    }
     if (host) host.style.display = "none";
     if (empty) empty.style.display = "none";
     return;
@@ -2017,26 +1872,54 @@ function renderMiniMap() {
 
   panel.dataset.collapsed = "false";
   applyMapPanelHeight(panel);
-  const entries = (groupEntriesByDay(boardState.entries).get(day) || []).filter(
-    (e) => entryCoords(e) != null
+  const dayEntries = groupEntriesByDay(boardState.entries).get(day) || [];
+  const stops = dayEntries.filter(
+    (e) => e.kind !== "transit" && entryCoords(e) != null
   );
+  const transitEntries = dayEntries.filter((e) => e.kind === "transit");
+  // Geocode any board/alight points not yet known, then re-render once ready.
+  backfillTransitCoords(transitEntries);
+  const segments = transitEntries
+    .map((entry) => ({
+      entry,
+      fromCoords: transitEndCoords(entry.from),
+      toCoords: transitEndCoords(entry.to),
+    }))
+    .filter((s) => s.fromCoords || s.toCoords);
+
+  // When the Ideas box is focused, every available idea in this day's city.
+  const cityOptions = cityOptionPlacesForActiveDay();
+
   const previewPlace = boardState.previewSlug
     ? placeFor(boardState.previewSlug)
     : null;
   const preview = previewPlace?.coords ? previewPlace : null;
+  const stay = stayForDay(day);
+  const stayCoords = Array.isArray(stay?.coords) ? stay.coords : null;
   const titleText = boardState.dayTitles[String(day)];
   const label = titleText
     ? `Day ${day} · ${titleText}`
     : `Day ${day} · ${formatDayDate(day)}`;
   if (status) {
-    const base =
-      entries.length === 0
-        ? `${label} — no places yet`
-        : `${label} — ${entries.length} stop${entries.length > 1 ? "s" : ""}`;
+    const parts = [];
+    if (stops.length) parts.push(`${stops.length} stop${stops.length > 1 ? "s" : ""}`);
+    if (segments.length) parts.push(`${segments.length} leg${segments.length > 1 ? "s" : ""}`);
+    let base = parts.length
+      ? `${label} — ${parts.join(" · ")}`
+      : `${label} — no places yet`;
+    if (cityOptions.length) {
+      base += ` · ${cityOptions.length} idea${cityOptions.length > 1 ? "s" : ""} nearby`;
+    }
     status.textContent = preview ? `${base} · previewing ${preview.name}` : base;
   }
 
-  if (entries.length === 0 && !preview) {
+  if (
+    stops.length === 0 &&
+    segments.length === 0 &&
+    cityOptions.length === 0 &&
+    !preview &&
+    !stayCoords
+  ) {
     if (host) host.style.display = "none";
     if (empty) empty.style.display = "flex";
     return;
@@ -2048,8 +1931,37 @@ function renderMiniMap() {
   if (!map) return;
   boardState.miniMapLayers.clearLayers();
 
+  const boundsPoints = [];
+
+  // Transit legs sit beneath the numbered stop pins: a dashed, mode-colored
+  // line from where you board to where you get off, with a node at each end.
+  segments.forEach(({ entry, fromCoords, toCoords }) => {
+    const color = transitLineColor(entry.mode);
+    if (fromCoords && toCoords) {
+      L.polyline([fromCoords, toCoords], {
+        color,
+        weight: 4,
+        opacity: 0.85,
+        dashArray: "1 8",
+        lineCap: "round",
+      }).addTo(boardState.miniMapLayers);
+    }
+    if (fromCoords) {
+      boardState.miniMapLayers.addLayer(
+        transitNodeMarker(entry, "from", fromCoords, color)
+      );
+      boundsPoints.push(fromCoords);
+    }
+    if (toCoords) {
+      boardState.miniMapLayers.addLayer(
+        transitNodeMarker(entry, "to", toCoords, color)
+      );
+      boundsPoints.push(toCoords);
+    }
+  });
+
   const points = [];
-  entries.forEach((entry, i) => {
+  stops.forEach((entry, i) => {
     const place = placeFor(entry.placeSlug);
     const coords = entryCoords(entry);
     const color = place
@@ -2083,7 +1995,51 @@ function renderMiniMap() {
     }).addTo(boardState.miniMapLayers);
   }
 
-  const boundsPoints = [...points];
+  boundsPoints.push(...points);
+
+  // The night's hotel — distinct color/glyph, not part of the route line.
+  if (stayCoords) {
+    const icon = L.divIcon({
+      className: "board-map-pin-icon",
+      html: `<span class="board-map-pin is-hotel" style="--pin-color:${STAY_COLOR}">🏨</span>`,
+      iconSize: [28, 28],
+      iconAnchor: [14, 28],
+    });
+    const marker = L.marker(stayCoords, { icon });
+    marker.bindTooltip(`🏨 ${stay.name} — your hotel tonight`, {
+      direction: "top",
+      offset: [0, -22],
+    });
+    if (stay.url) {
+      marker.on("click", () => window.open(stay.url, "_blank", "noopener"));
+    }
+    boardState.miniMapLayers.addLayer(marker);
+    boundsPoints.push(stayCoords);
+  }
+  // Ideas-box focus: a light "+" on every available activity in this city, so
+  // you can see your options around the day's plan. Clicking one schedules it
+  // onto the active day.
+  cityOptions.forEach((place) => {
+    if (place.slug === boardState.previewSlug) return; // drawn as the active preview below
+    const color = CITY_COLORS[place.city] || "#2e7d4f";
+    const icon = L.divIcon({
+      className: "board-map-pin-icon",
+      html: `<span class="board-map-pin is-city-option" style="--pin-color:${color}">+</span>`,
+      iconSize: [22, 22],
+      iconAnchor: [11, 22],
+    });
+    const marker = L.marker(place.coords, { icon });
+    marker.bindTooltip(`${place.name} — click to add to Day ${boardState.activeDay}`, {
+      direction: "top",
+      offset: [0, -18],
+    });
+    marker.on("mouseover", () => showIdeaHoverPreview(place));
+    marker.on("mouseout", clearIdeaHoverPreview);
+    marker.on("click", () => addPlaceToActiveDay(place));
+    boardState.miniMapLayers.addLayer(marker);
+    boundsPoints.push(place.coords);
+  });
+
   if (preview) {
     const color = CITY_COLORS[preview.city] || "#2e7d4f";
     const icon = L.divIcon({
@@ -2093,14 +2049,11 @@ function renderMiniMap() {
       iconAnchor: [14, 28],
     });
     const marker = L.marker(preview.coords, { icon });
-    marker.bindTooltip(`${preview.name} — idea (click pin to dismiss)`, {
+    marker.bindTooltip(`${preview.name} — idea (click to add)`, {
       direction: "top",
       offset: [0, -22],
     });
-    marker.on("click", () => {
-      boardState.previewSlug = null;
-      renderMiniMap();
-    });
+    marker.on("click", () => addPlaceToActiveDay(preview));
     boardState.miniMapLayers.addLayer(marker);
     boardState.previewMarker = marker;
     boundsPoints.push(preview.coords);
@@ -2112,6 +2065,32 @@ function renderMiniMap() {
     map.invalidateSize();
     map.fitBounds(bounds, { animate: true, maxZoom: 16 });
   }, 220);
+}
+
+function showIdeaHoverPreview(place) {
+  if (!place?.coords || !boardState.miniMapLayers) return;
+  clearIdeaHoverPreview();
+  const color = CITY_COLORS[place.city] || "#2e7d4f";
+  const icon = L.divIcon({
+    className: "board-map-pin-icon",
+    html: `<span class="board-map-pin is-preview" style="--pin-color:${color}">+</span>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 28],
+  });
+  const marker = L.marker(place.coords, {
+    icon,
+    interactive: false,
+    zIndexOffset: 1000,
+  });
+  boardState.miniMapLayers.addLayer(marker);
+  boardState.hoverPreviewMarker = marker;
+}
+
+function clearIdeaHoverPreview() {
+  const marker = boardState.hoverPreviewMarker;
+  if (!marker || !boardState.miniMapLayers) return;
+  boardState.miniMapLayers.removeLayer(marker);
+  boardState.hoverPreviewMarker = null;
 }
 
 function pulsePreviewPin() {
@@ -2228,6 +2207,41 @@ function activeDayProximityContext() {
   }
   if (anchors.length === 0 && cities.size === 0) return null;
   return { anchors, cities };
+}
+
+// The set of cities "we're in" on the active day: the cities of that day's
+// scheduled stops, plus the city of the hotel we sleep at that night.
+function activeDayCities() {
+  const day = boardState.activeDay;
+  if (day == null) return new Set();
+  const cities = new Set();
+  const entries = groupEntriesByDay(boardState.entries).get(day) || [];
+  for (const e of entries) {
+    const p = placeFor(e.placeSlug);
+    if (p?.city) cities.add(p.city);
+  }
+  const stay = stayForDay(day);
+  if (stay?.city) cities.add(stay.city);
+  return cities;
+}
+
+// When the Ideas box is focused, the available (unscheduled, unhidden) catalog
+// places in the active day's city/cities — shown as "+" options on the map.
+function cityOptionPlacesForActiveDay() {
+  if (!boardState.ideasFocused || boardState.activeDay == null) return [];
+  const cities = activeDayCities();
+  if (cities.size === 0) return [];
+  const usedMap = usedSlugDayMap(boardState.entries);
+  const archived = boardState.archivedSlugs;
+  return allPlacesForItin.filter(
+    (p) =>
+      cities.has(p.city) &&
+      Array.isArray(p.coords) &&
+      p.coords.length === 2 &&
+      !usedMap.has(p.slug) &&
+      !boardState.addingSlugs.has(p.slug) &&
+      !archived.has(p.slug)
+  );
 }
 
 function proximityTierFor(place, ctx) {
@@ -2534,6 +2548,47 @@ async function handleDrop(evt) {
   try {
     await window.Trip.updateItineraryEntry(id, { day: toDay, order });
   } catch (e) {
+    alert(e.message);
+    reconcileBoard();
+  }
+}
+
+function nextOrderForDay(dayNum) {
+  const entries = groupEntriesByDay(boardState.entries).get(dayNum) || [];
+  if (entries.length === 0) return 0;
+  return Math.max(
+    ...entries.map((e) => (typeof e.order === "number" ? e.order : 0))
+  ) + 1;
+}
+
+async function addPlaceToActiveDay(place) {
+  const day = boardState.activeDay;
+  if (!Number.isFinite(day)) return;
+  if (!window.Trip?.configured || !window.Trip.currentUser) {
+    alert("Sign in to add this activity");
+    return;
+  }
+  if (!place?.slug || boardState.addingSlugs.has(place.slug)) return;
+  if (boardState.entries.some((e) => e.placeSlug === place.slug)) {
+    boardState.previewSlug = null;
+    renderMiniMap();
+    return;
+  }
+
+  boardState.addingSlugs.add(place.slug);
+  if (boardState.previewSlug === place.slug) boardState.previewSlug = null;
+  renderMiniMap();
+  try {
+    await window.Trip.addItineraryEntry({
+      day,
+      order: nextOrderForDay(day),
+      placeSlug: place.slug,
+      title: place.name,
+      notes: "",
+      tickets: [],
+    });
+  } catch (e) {
+    boardState.addingSlugs.delete(place.slug);
     alert(e.message);
     reconcileBoard();
   }
@@ -3348,11 +3403,16 @@ function renderTransitCardEditor(entry) {
       .map((t) => ({ label: t.label.trim(), url: t.url.trim() }))
       .filter((t) => t.url);
     try {
+      // Resolve board/alight coords so the leg's nodes are stable across loads.
+      const [fromCoords, toCoords] = await Promise.all([
+        fromLabel ? coordsForLabel(fromLabel) : Promise.resolve(null),
+        toLabel ? coordsForLabel(toLabel) : Promise.resolve(null),
+      ]);
       await window.Trip.updateItineraryEntry(entry.id, {
         kind: "transit",
         mode,
-        from: { slug: slugForPlaceName(fromLabel), label: fromLabel },
-        to: { slug: slugForPlaceName(toLabel), label: toLabel },
+        from: { slug: slugForPlaceName(fromLabel), label: fromLabel, coords: fromCoords || null },
+        to: { slug: slugForPlaceName(toLabel), label: toLabel, coords: toCoords || null },
         departTime,
         arriveTime,
         line,
