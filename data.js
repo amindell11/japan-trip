@@ -15,7 +15,7 @@ const TRIP_DATA = {
               travel: "2 stops from Shinjuku · 7 min",
               summary:
                 "The world's busiest pedestrian crossing. Best at dusk with the neon signs lighting up. Gateway to Shibuya's shopping and nightlife.",
-              tags: ["urban", "iconic", "nightlife"],
+              tags: ["urban", "iconic", "nightlife", "touristy"],
               wiki: "Shibuya_Crossing",
               coords: [35.6595, 139.7004],
               links: [
@@ -27,7 +27,7 @@ const TRIP_DATA = {
               travel: "atop Shibuya Scramble Square",
               summary:
                 "Open-air rooftop observation deck on the 47th floor of Shibuya Scramble Square. 360° city panorama, killer at sunset. Book a timed entry slot in advance — it sells out.",
-              tags: ["urban", "scenic", "iconic"],
+              tags: ["urban", "scenic", "iconic", "touristy"],
               wiki: "Shibuya_Scramble_Square",
               coords: [35.6585, 139.7019],
               links: [
@@ -38,7 +38,7 @@ const TRIP_DATA = {
               name: "Shinjuku / Golden Gai",
               summary:
                 "Tokyo's biggest transit hub surrounded by shopping and restaurants. Golden Gai is a maze of 200+ tiny themed bars seating 5–10 people each — perfect for a group night out.",
-              tags: ["nightlife", "food", "drinks"],
+              tags: ["nightlife", "food", "drinks", "touristy"],
               wiki: "Golden_Gai",
               coords: [35.6938, 139.7036],
             },
@@ -46,10 +46,34 @@ const TRIP_DATA = {
               name: "Harajuku / Takeshita Street",
               travel: "1 stop from Shinjuku · 5 min",
               summary:
-                "Youth fashion capital. Takeshita Street is packed with wild fashion shops, crepe stands, and quirky cafes. Adjacent to Meiji Shrine and Yoyogi Park.",
-              tags: ["fashion", "shopping", "food"],
+                "Youth fashion capital. Takeshita Street is packed with wild fashion shops, crepe stands, and quirky cafes. Adjacent to Meiji Shrine and Yoyogi Park. Endorsed by Stefan.",
+              tags: ["fashion", "shopping", "food", "stefans-recs", "touristy"],
               wiki: "Takeshita_Street",
               coords: [35.6716, 139.7031],
+            },
+            {
+              name: "visvim (F.I.L. Tokyo)",
+              travel: "Omotesando · short walk from Harajuku",
+              summary:
+                "Main central-Tokyo shop of Hiroki Nakamura's cult label — hand-crafted footwear and Americana-inspired clothing in an immersive basement space. The brand's larger WMV flagship is in Nakameguro if you want more. Recommended by Stefan.",
+              tags: ["fashion", "shopping", "stefans-recs"],
+              wiki: "",
+              coords: [35.6645, 139.7064],
+              links: [
+                { label: "visvim official", url: "https://www.visvim.tv/" },
+              ],
+            },
+            {
+              name: "Little Cloud Coffee",
+              travel: "GYRE building 2F, Omotesando",
+              summary:
+                "visvim's own specialty coffee cafe — house-roasted coffee, juices, and baked goods on the 2nd floor of the GYRE building. Pairs naturally with the visvim shop stop. Open 11:00–19:00. Recommended by Stefan.",
+              tags: ["coffee", "cafe", "stefans-recs"],
+              wiki: "",
+              coords: [35.6675, 139.7070],
+              links: [
+                { label: "little cloud coffee", url: "https://www.visvim.tv/lcc/" },
+              ],
             },
             {
               name: "Asakusa / Senso-ji Temple",
@@ -64,13 +88,61 @@ const TRIP_DATA = {
               ],
             },
             {
+              name: "Sumo Morning Practice (Ryogoku)",
+              travel: "Ryogoku · 2 stops from Akihabara",
+              summary:
+                "No grand tournament overlaps the trip (May basho ends May 24; July basho starts July 12 in Nagoya), so the way to see sumo is a morning practice (keiko) visit at a stable in Ryogoku, Tokyo's sumo district. ~2 hrs, sit quietly, no flash; ~$80–100/person via guided tour — book ahead. Recommended by Stefan.",
+              tags: ["cultural", "activity", "sumo", "stefans-recs"],
+              wiki: "Ryōgoku_Kokugikan",
+              coords: [35.6968, 139.7932],
+              links: [
+                { label: "Stable visit (GetYourGuide)", url: "https://www.getyourguide.com/tokyo-l193/tokyo-sumo-stable-morning-visit-t277927/" },
+                { label: "Stable visit (Viator)", url: "https://www.viator.com/tours/Tokyo/Ryogoku-Sumo-Morning-Practice-Tour-in-Tokyo/d334-63670P10" },
+              ],
+            },
+            {
               name: "Akihabara",
               travel: "10 stops from Shinjuku · 20 min",
               summary:
                 "'Electric Town' — anime, manga, retro games, electronics. Multi-story arcades and maid cafes. The touristy version of what Nakano Broadway does more authentically.",
-              tags: ["anime", "shopping", "arcades"],
+              tags: ["anime", "shopping", "arcades", "touristy"],
               wiki: "Akihabara",
               coords: [35.7022, 139.7745],
+            },
+            {
+              name: "GiGO Akihabara (Arcades)",
+              travel: "in Akihabara",
+              summary:
+                "Multi-floor flagship game center: floors of crane games, rhythm games (maimai, DDR, Project Diva), racing cabinets, and a dedicated retro floor of 90s classics. Arcades like this are all over Akihabara and Shibuya — this is an easy anchor. Recommended by Stefan.",
+              tags: ["arcades", "gaming", "indoor", "stefans-recs"],
+              wiki: "",
+              coords: [35.7008, 139.7715],
+              links: [
+                { label: "GiGO official", url: "https://tempo.gigo.jp/" },
+              ],
+            },
+            {
+              name: "Roppongi Nightlife",
+              summary:
+                "Tokyo's most international nightlife district — clubs (V2 Tokyo), bars, and izakaya drawing a mixed foreign/local crowd. Safe overall, but never follow street touts offering 'free entry' — they lead to rip-off bars with huge hidden charges. Recommended by Stefan.",
+              tags: ["nightlife", "clubs", "drinks", "stefans-recs", "touristy"],
+              wiki: "Roppongi",
+              coords: [35.6628, 139.7314],
+              links: [
+                { label: "Roppongi guide (Go Tokyo)", url: "https://www.gotokyo.org/en/destinations/central-tokyo/roppongi/index.html" },
+              ],
+            },
+            {
+              name: "WM by WAGYUMAFIA",
+              travel: "Akasaka",
+              summary:
+                "WAGYUMAFIA's flagship wagyu omakase counter — an interactive standing-counter experience built around premium Ozaki and Kobe beef. Effectively members-only: reservation mandatory, book 3+ weeks ahead via the official page. Recommended by Stefan.",
+              tags: ["food", "wagyu", "upscale", "stefans-recs"],
+              wiki: "",
+              coords: [35.6717, 139.7356],
+              links: [
+                { label: "Reservations", url: "https://wagyumafia.com/pages/reservation" },
+              ],
             },
             {
               name: "Ueno Park",
@@ -89,12 +161,36 @@ const TRIP_DATA = {
               name: "Meiji Shrine",
               travel: "1 stop from Shinjuku · 5 min",
               summary:
-                "170 acres of forest surrounding a serene shrine. Pairs with Harajuku and Takeshita Street since they're adjacent.",
-              tags: ["shrine", "nature", "cultural"],
+                "170 acres of forest surrounding a serene shrine. Pairs with Harajuku and Takeshita Street since they're adjacent. Endorsed by Stefan.",
+              tags: ["shrine", "nature", "cultural", "stefans-recs"],
               wiki: "Meiji_Shrine",
               coords: [35.6764, 139.6993],
               links: [
                 { label: "Official site", url: "https://www.meijijingu.or.jp/en/" },
+              ],
+            },
+            {
+              name: "Yoyogi Park",
+              travel: "next to Harajuku & Meiji Shrine",
+              summary:
+                "One of Tokyo's largest parks — wide lawns, ponds, and forested paths. On weekends the Harajuku side fills with street performers, musicians, and festivals. Free; great picnic break between Harajuku and Meiji Shrine. Recommended by Stefan.",
+              tags: ["park", "nature", "chill", "stefans-recs"],
+              wiki: "Yoyogi_Park",
+              coords: [35.6720, 139.6949],
+              links: [
+                { label: "Park info (Go Tokyo)", url: "https://www.gotokyo.org/en/spot/21/index.html" },
+              ],
+            },
+            {
+              name: "Kuumba International",
+              travel: "Tomigaya · 10 min walk from Yoyogi Park",
+              summary:
+                "Tokyo's cult incense brand — its shop is called the 'Kuumba Book Shop' but the 'books' are leather sample binders of hand-rolled incense you browse in-store. Quiet, atmospheric spot in residential Tomigaya. Recommended by Stefan.",
+              tags: ["shopping", "incense", "local", "stefans-recs"],
+              wiki: "",
+              coords: [35.6647, 139.6860],
+              links: [
+                { label: "Kuumba International", url: "https://kuumbainternational.com/" },
               ],
             },
             {
@@ -113,7 +209,7 @@ const TRIP_DATA = {
               travel: "25 stops from Shinjuku · 1 hr",
               summary:
                 "Part of the Kamakura day trip. Enoshima island has a small beach, and the nearby Shonan coast (Yuigahama, Zushi) has longer stretches of sand.",
-              tags: ["beach", "day-trip"],
+              tags: ["beach", "day-trip", "prof-recs"],
               wiki: "Enoshima",
               coords: [35.2994, 139.4800],
               links: [
@@ -137,7 +233,7 @@ const TRIP_DATA = {
               travel: "2 stops from Shinjuku · 5 min",
               summary:
                 "Nakano Broadway is the locals' alternative to Akihabara: retro anime, vintage toys, manga at better prices with zero tourist crowds. Great food stalls in the basement.",
-              tags: ["anime", "shopping", "local"],
+              tags: ["anime", "shopping", "local", "prof-recs"],
               wiki: "Nakano_Broadway",
               coords: [35.7084, 139.6654],
               links: [
@@ -149,7 +245,7 @@ const TRIP_DATA = {
               travel: "3 stops from Shinjuku · 6 min",
               summary:
                 "Tokyo's punk-rock / bohemian quarter. Japan's best vintage and thrift shopping, indie live music venues, amazing izakaya alleys.",
-              tags: ["vintage", "nightlife", "local"],
+              tags: ["vintage", "nightlife", "local", "prof-recs"],
               wiki: "Kōenji",
               coords: [35.7056, 139.6497],
             },
@@ -158,7 +254,7 @@ const TRIP_DATA = {
               travel: "15 min from Shinjuku",
               summary:
                 "Beloved neighborhood centered around Inokashira Park with its pond, swan boats, and forested paths. Harmonica Yokocho alley has tiny food stalls. Near the Ghibli Museum (book months ahead).",
-              tags: ["park", "ghibli", "local"],
+              tags: ["park", "ghibli", "local", "prof-recs"],
               wiki: "Kichijōji",
               coords: [35.7002, 139.5795],
               links: [
@@ -176,7 +272,7 @@ const TRIP_DATA = {
               travel: "2 min from Shinjuku (Odakyu Line)",
               summary:
                 "Maybe Tokyo's coolest neighborhood. Indie theaters, vintage clothing, tiny live music bars, specialty coffee shops. Bohemian and walkable.",
-              tags: ["vintage", "nightlife", "local"],
+              tags: ["vintage", "nightlife", "local", "prof-recs"],
               wiki: "Shimokitazawa",
               coords: [35.6614, 139.6680],
             },
@@ -185,7 +281,7 @@ const TRIP_DATA = {
               travel: "Walking distance from Shibuya",
               summary:
                 "Upscale but chill. Famous for the stunning T-Site Tsutaya bookstore. Boutiques, cafes, and a very 'grown-up Tokyo' feel.",
-              tags: ["cafe", "shopping", "upscale"],
+              tags: ["cafe", "shopping", "upscale", "prof-recs"],
               wiki: "Daikanyama",
               coords: [35.6497, 139.7030],
               links: [
@@ -193,11 +289,47 @@ const TRIP_DATA = {
               ],
             },
             {
+              name: "Daikanyama T-Site / Tsutaya Books",
+              travel: "Daikanyama · walking distance from Shibuya",
+              summary:
+                "Celebrated three-building bookstore-and-lifestyle complex with an exceptional art/design/photography selection, the Anjin lounge, and curated shops. A must for design lovers; open roughly 9:00–22:00. Recommended by Stefan.",
+              tags: ["books", "design", "cafe", "stefans-recs"],
+              wiki: "",
+              coords: [35.6491, 139.6996],
+              links: [
+                { label: "Official site", url: "https://store.tsite.jp/daikanyama/" },
+              ],
+            },
+            {
+              name: "Saturdays NYC Tokyo",
+              travel: "Daikanyama / Aobadai",
+              summary:
+                "Tokyo flagship of the New York surf/lifestyle brand — menswear and surf shop with an espresso bar and back garden. Stylish coffee-and-shopping stop on a Daikanyama stroll. Recommended by Stefan.",
+              tags: ["fashion", "cafe", "shopping", "stefans-recs"],
+              wiki: "",
+              coords: [35.6514, 139.6934],
+              links: [
+                { label: "Saturdays NYC", url: "https://www.saturdaysnyc.com/" },
+              ],
+            },
+            {
+              name: "WAGYUMAFIA The Cutlet Sandwich",
+              travel: "Nakameguro · near the station",
+              summary:
+                "The original WAGYUMAFIA katsu-sando counter — deep-fried wagyu cutlet sandwiches from ~¥2,000 up to a Chateaubriand splurge. Tiny walk-in spot, expect a wait; closed Wednesdays. Recommended by Stefan.",
+              tags: ["food", "wagyu", "casual", "stefans-recs"],
+              wiki: "",
+              coords: [35.6428, 139.6931],
+              links: [
+                { label: "WAGYUMAFIA", url: "https://wagyumafia.com/" },
+              ],
+            },
+            {
               name: "Jiyugaoka",
               travel: "10 min south of Shibuya",
               summary:
                 "European village feel with cobblestone-style streets, patisseries, and dessert shops. Good for an afternoon stroll and sweets.",
-              tags: ["dessert", "cafe", "charming"],
+              tags: ["dessert", "cafe", "charming", "prof-recs"],
               wiki: "Jiyūgaoka",
               coords: [35.6076, 139.6682],
             },
@@ -277,7 +409,7 @@ const TRIP_DATA = {
               travel: "1 hr south by train",
               summary:
                 "Coastal town with a giant bronze Buddha, forested hillside temple trails, and Enoshima island with ocean panoramas and seafood.",
-              tags: ["historic", "beach", "day-trip"],
+              tags: ["historic", "beach", "day-trip", "prof-recs"],
               wiki: "Kamakura",
               coords: [35.3193, 139.5466],
               links: [
@@ -290,7 +422,7 @@ const TRIP_DATA = {
               travel: "30 min north by train",
               summary:
                 "'Little Edo' — preserved Edo-period merchant architecture, a famous bell tower, and a candy lane. Easy half-day trip, great for photos.",
-              tags: ["historic", "day-trip"],
+              tags: ["historic", "day-trip", "prof-recs"],
               wiki: "Kawagoe,_Saitama",
               coords: [35.9251, 139.4858],
               links: [
@@ -302,7 +434,7 @@ const TRIP_DATA = {
               travel: "1.5 hrs from Shinjuku",
               summary:
                 "Hot springs, Lake Ashi cruise, cable cars, Fuji views. Overlaps with Kawaguchi plans — probably save for a future trip.",
-              tags: ["onsen", "day-trip", "fuji-view"],
+              tags: ["onsen", "day-trip", "fuji-view", "prof-recs"],
               wiki: "Hakone,_Kanagawa",
               coords: [35.2321, 139.1069],
               links: [
@@ -323,8 +455,8 @@ const TRIP_DATA = {
             {
               name: "Fushimi Inari Taisha",
               summary:
-                "Thousands of vermillion torii gates winding up a forested mountainside. The summit hike takes ~2 hours and most tourists skip it — do the whole thing.",
-              tags: ["shrine", "hike", "iconic"],
+                "Thousands of vermillion torii gates winding up a forested mountainside. The summit hike takes ~2 hours and most tourists skip it — do the whole thing. Endorsed by Stefan.",
+              tags: ["shrine", "hike", "iconic", "stefans-recs"],
               wiki: "Fushimi_Inari-taisha",
               coords: [34.9671, 135.7727],
               links: [
@@ -354,6 +486,30 @@ const TRIP_DATA = {
               ],
             },
             {
+              name: "Nishiki Market",
+              travel: "downtown Kyoto",
+              summary:
+                "'Kyoto's Kitchen' — a covered 400m market street of stalls selling pickles, dashimaki tamago, grilled seafood, mochi, and tofu sweets. Go weekday morning for fewer crowds; etiquette is to eat standing at the stall, not while walking. Recommended by Stefan.",
+              tags: ["food", "market", "iconic", "stefans-recs"],
+              wiki: "Nishiki_Market",
+              coords: [35.0050, 135.7647],
+              links: [
+                { label: "Official site", url: "https://www.kyoto-nishiki.or.jp/" },
+              ],
+            },
+            {
+              name: "Sanjusangen-do",
+              travel: "Higashiyama · near Kyoto National Museum",
+              summary:
+                "120m-long temple hall (built 1266) housing 1,001 gilded wooden Kannon statues plus guardian deities — an overwhelming sight. ¥600, open 8:30–17:00; photography strictly forbidden inside. Recommended by Stefan.",
+              tags: ["temple", "historic", "stefans-recs"],
+              wiki: "Sanjūsangen-dō",
+              coords: [34.9876, 135.7717],
+              links: [
+                { label: "Official site", url: "http://www.sanjusangendo.jp/" },
+              ],
+            },
+            {
               name: "Philosopher's Path",
               summary:
                 "Peaceful 2km canal-side walking path lined with trees, connecting several temples. Quiet and meditative.",
@@ -379,8 +535,8 @@ const TRIP_DATA = {
             {
               name: "Samurai Kembu Kyoto",
               summary:
-                "Near Gion — sword and fan performance classes. More traditional / atmospheric setting than the Tokyo samurai spots.",
-              tags: ["cultural", "activity"],
+                "Near Gion — sword and fan performance classes. More traditional / atmospheric setting than the Tokyo samurai spots. Endorsed by Stefan.",
+              tags: ["cultural", "activity", "stefans-recs"],
               wiki: "Samurai",
               coords: [35.0054, 135.7738],
               links: [
@@ -395,13 +551,25 @@ const TRIP_DATA = {
             {
               name: "Arashiyama Bamboo Forest",
               summary:
-                "Towering bamboo canopy creating a cathedral-like corridor. Rent bikes to explore the wider area: the river, Togetsukyo Bridge, and the monkey park.",
-              tags: ["nature", "iconic"],
+                "Towering bamboo canopy creating a cathedral-like corridor. Rent bikes to explore the wider area: the river, Togetsukyo Bridge, and the monkey park. Endorsed by Stefan.",
+              tags: ["nature", "iconic", "stefans-recs"],
               wiki: "Arashiyama",
               coords: [35.0170, 135.6714],
               links: [
                 { label: "Iwatayama Monkey Park", url: "https://monkeypark.jp/en/" },
                 { label: "Tenryu-ji Temple", url: "https://www.tenryuji.com/en/" },
+              ],
+            },
+            {
+              name: "% Arabica Kyoto Arashiyama",
+              travel: "by Togetsukyo Bridge",
+              summary:
+                "Famous minimalist coffee stand on the riverbank beside Togetsukyo Bridge — great latte art with a great view. Expect a queue midday; arrive near 9:00 opening to beat it. Takeaway only, a few benches outside. Recommended by Stefan.",
+              tags: ["coffee", "scenic", "stefans-recs"],
+              wiki: "",
+              coords: [35.0135, 135.6764],
+              links: [
+                { label: "Official site", url: "https://arabica.com/en/location/arabica-kyoto-arashiyama/" },
               ],
             },
           ],
@@ -413,8 +581,8 @@ const TRIP_DATA = {
               name: "Nara Park & Todai-ji",
               travel: "45 min by train",
               summary:
-                "Over 1,000 wild deer that bow for crackers. Todai-ji houses a massive bronze Buddha in the world's largest wooden building.",
-              tags: ["deer", "historic", "day-trip"],
+                "Over 1,000 wild deer that bow for crackers. Todai-ji houses a massive bronze Buddha in the world's largest wooden building. Endorsed by Stefan.",
+              tags: ["deer", "historic", "day-trip", "stefans-recs"],
               wiki: "Nara_Park",
               coords: [34.6851, 135.8430],
               links: [
@@ -431,6 +599,19 @@ const TRIP_DATA = {
               coords: [34.6828, 135.8614],
               links: [
                 { label: "Kasuga Taisha shrine", url: "https://www.kasugataisha.or.jp/about_en/" },
+              ],
+            },
+            {
+              name: "Kurama Onsen",
+              travel: "30 min north via Eizan Railway",
+              summary:
+                "Natural sulfur hot spring with a forest-view open-air bath in Kurama village, north of the city — the 'spa north of Kyoto.' Reopened in 2024 after a long closure; day bathing ~¥1,500–2,700, no reservation. Pairs with the Kurama–Kibune hike. In-city alternative: Funaoka Onsen, a historic 1923 sento (~¥490). Recommended by Stefan.",
+              tags: ["onsen", "nature", "day-trip", "stefans-recs"],
+              wiki: "Mount_Kurama",
+              coords: [35.1170, 135.7660],
+              links: [
+                { label: "Kurama Onsen official", url: "https://en.kurama-spa.com/" },
+                { label: "Funaoka Onsen (alternative)", url: "https://1010.kyoto/spot/funaokaonsen/?lang=en" },
               ],
             },
           ],
