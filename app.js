@@ -884,6 +884,18 @@ const TRANSIT_KNOWN_MIGRATIONS = {
   "Head to airport — fly home": { mode: "plane", fromLabel: "", toLabel: "home" },
 };
 
+const MAP_PANEL_HEIGHT_KEY = "trip:mapPanelHeight";
+const MAP_PANEL_MIN_PX = 180;
+function loadSavedMapPanelHeight() {
+  try {
+    const raw = localStorage.getItem(MAP_PANEL_HEIGHT_KEY);
+    const n = raw ? Number(raw) : NaN;
+    return Number.isFinite(n) && n >= MAP_PANEL_MIN_PX ? n : null;
+  } catch {
+    return null;
+  }
+}
+
 const boardState = {
   entries: [],
   editingId: null,
@@ -896,6 +908,7 @@ const boardState = {
   pinByEntryId: new Map(),
   pulseTimer: null,
   transitMigrationRan: false,
+  mapPanelHeight: loadSavedMapPanelHeight(),
 };
 
 // Walking-time helpers: cache from distances.json + runtime fallback.
@@ -1389,6 +1402,7 @@ function buildMapPanel() {
   const panel = el("div", "board-map-panel");
   panel.dataset.collapsed = "true";
   panel.innerHTML = `
+    <div class="board-map-resizer" data-map-resizer title="Drag to resize" role="separator" aria-orientation="horizontal" aria-label="Resize map panel"></div>
     <div class="board-map-bar">
       <span class="board-map-bar-text" data-map-status>📍 Click a day column to focus the map</span>
       <button type="button" class="board-map-close" data-map-close title="Unpin day">×</button>
@@ -1401,7 +1415,89 @@ function buildMapPanel() {
   panel.querySelector("[data-map-close]").addEventListener("click", () => {
     setActiveDay(null);
   });
+  attachMapPanelResizer(panel);
+  applyMapPanelHeight(panel);
   return panel;
+}
+
+function applyMapPanelHeight(panel) {
+  const p = panel || document.querySelector(".board-map-panel");
+  if (!p) return;
+  if (p.dataset.collapsed === "true") {
+    p.style.height = "";
+    return;
+  }
+  const h = boardState.mapPanelHeight;
+  if (h && Number.isFinite(h)) {
+    const max = Math.round(window.innerHeight * 0.9);
+    const clamped = Math.max(MAP_PANEL_MIN_PX, Math.min(max, h));
+    p.style.height = `${clamped}px`;
+  } else {
+    p.style.height = "";
+  }
+}
+
+function attachMapPanelResizer(panel) {
+  const resizer = panel.querySelector("[data-map-resizer]");
+  if (!resizer) return;
+  let startY = 0;
+  let startH = 0;
+  let pointerId = null;
+
+  const onMove = (ev) => {
+    const dy = startY - ev.clientY; // dragging up grows the panel
+    const max = Math.round(window.innerHeight * 0.9);
+    const next = Math.max(MAP_PANEL_MIN_PX, Math.min(max, startH + dy));
+    panel.style.height = `${next}px`;
+    boardState.mapPanelHeight = next;
+    if (boardState.miniMap) boardState.miniMap.invalidateSize();
+  };
+
+  const onUp = () => {
+    panel.classList.remove("is-resizing");
+    document.removeEventListener("pointermove", onMove);
+    document.removeEventListener("pointerup", onUp);
+    document.removeEventListener("pointercancel", onUp);
+    if (pointerId != null) {
+      try { resizer.releasePointerCapture(pointerId); } catch {}
+      pointerId = null;
+    }
+    if (boardState.mapPanelHeight) {
+      try {
+        localStorage.setItem(
+          MAP_PANEL_HEIGHT_KEY,
+          String(Math.round(boardState.mapPanelHeight))
+        );
+      } catch {}
+    }
+    if (boardState.miniMap) {
+      setTimeout(() => boardState.miniMap.invalidateSize(), 60);
+    }
+  };
+
+  resizer.addEventListener("pointerdown", (ev) => {
+    if (panel.dataset.collapsed === "true") return;
+    ev.preventDefault();
+    startY = ev.clientY;
+    startH = panel.getBoundingClientRect().height;
+    panel.classList.add("is-resizing");
+    pointerId = ev.pointerId;
+    try { resizer.setPointerCapture(ev.pointerId); } catch {}
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+    document.addEventListener("pointercancel", onUp);
+  });
+
+  // Double-click resets to the CSS default (38vh).
+  resizer.addEventListener("dblclick", () => {
+    if (panel.dataset.collapsed === "true") return;
+    boardState.mapPanelHeight = null;
+    panel.style.height = "";
+    try { localStorage.removeItem(MAP_PANEL_HEIGHT_KEY); } catch {}
+    if (boardState.miniMap) {
+      setTimeout(() => boardState.miniMap.invalidateSize(), 220);
+    }
+  });
 }
 
 function buildDayColumn(dayNum) {
@@ -1828,7 +1924,10 @@ function setActiveDay(dayNum) {
   if (dayNum === boardState.activeDay) return;
   boardState.activeDay = dayNum;
   const panel = document.querySelector(".board-map-panel");
-  if (panel) panel.dataset.collapsed = dayNum == null ? "true" : "false";
+  if (panel) {
+    panel.dataset.collapsed = dayNum == null ? "true" : "false";
+    applyMapPanelHeight(panel);
+  }
   for (const col of document.querySelectorAll(".board-col-day")) {
     col.classList.toggle(
       "is-pinned",
@@ -1885,6 +1984,7 @@ function renderMiniMap() {
 
   if (day == null) {
     panel.dataset.collapsed = "true";
+    applyMapPanelHeight(panel);
     if (status) status.textContent = "📍 Click a day column to focus the map";
     if (host) host.style.display = "none";
     if (empty) empty.style.display = "none";
@@ -1892,6 +1992,7 @@ function renderMiniMap() {
   }
 
   panel.dataset.collapsed = "false";
+  applyMapPanelHeight(panel);
   const entries = (groupEntriesByDay(boardState.entries).get(day) || []).filter(
     (e) => entryCoords(e) != null
   );
@@ -3474,4 +3575,5 @@ function setupBoardPopover() {
 
   window.addEventListener("scroll", hidePopover, true);
   window.addEventListener("resize", hidePopover);
+  window.addEventListener("resize", () => applyMapPanelHeight());
 }

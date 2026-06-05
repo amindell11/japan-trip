@@ -2291,7 +2291,48 @@ body[data-view="itinerary"] .board-days-strip {
 .board-map-panel[data-collapsed="true"] { height: 38px; }
 .board-map-panel[data-collapsed="false"] {
   height: 38vh;
-  min-height: 280px;
+  min-height: 180px;
+}
+
+/* While dragging the resizer: kill the height transition for smooth tracking. */
+.board-map-panel.is-resizing {
+  transition: none;
+  user-select: none;
+}
+.board-map-panel.is-resizing .board-map-body {
+  pointer-events: none;
+}
+
+.board-map-resizer {
+  flex: 0 0 8px;
+  margin-top: -2px;
+  cursor: ns-resize;
+  display: none;
+  position: relative;
+  touch-action: none;
+}
+
+.board-map-resizer::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 3px;
+  border-radius: 2px;
+  background: #d8d8d8;
+  transition: background 0.12s, width 0.12s;
+}
+
+.board-map-panel[data-collapsed="false"] .board-map-resizer {
+  display: block;
+}
+
+.board-map-resizer:hover::before,
+.board-map-panel.is-resizing .board-map-resizer::before {
+  background: var(--accent);
+  width: 64px;
 }
 
 .board-map-bar {
