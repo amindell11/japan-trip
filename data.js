@@ -486,6 +486,18 @@ const TRIP_DATA = {
               ],
             },
             {
+              name: "Kiyomizu-dera",
+              travel: "Higashiyama · up Sannen-zaka from Gion",
+              summary:
+                "Hillside temple (UNESCO World Heritage) famous for its huge wooden stage jutting over the slope — built without a single nail, with sweeping views over Kyoto. The approach winds up the Sannen-zaka and Ninen-zaka lanes packed with craft and snack shops. ~¥500, opens 6:00; gorgeous at dusk and during the seasonal night illuminations.",
+              tags: ["temple", "iconic", "historic", "scenic"],
+              wiki: "Kiyomizu-dera",
+              coords: [34.9949, 135.7850],
+              links: [
+                { label: "Official site", url: "https://www.kiyomizudera.or.jp/en/" },
+              ],
+            },
+            {
               name: "Nishiki Market",
               travel: "downtown Kyoto",
               summary:
